@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Bildverarbeitung — GitHub Pages
 
 Diese README erklärt kurz, wie du die vorhandene Datei `bildverarbeitung.html` über GitHub Pages öffentlich zugänglich machst.
@@ -36,3 +37,6 @@ git push
 ```
 
 Bei Fragen oder wenn ich den Commit/Push für dich ausführen soll, sag Bescheid.
+=======
+# bildverarbeitung
+>>>>>>> ee66258e5a289d6e42d415cc803c3cda1c5f06fa
