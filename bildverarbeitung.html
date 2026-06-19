@@ -92,6 +92,10 @@
     overflow: hidden;
   }
 
+  /* ── EMBEDDED TOOL VIEWS (keep same URL, swap iframe content) ── */
+  .page-frame { height: calc(100vh - 64px); }
+  .page-frame iframe { width: 100%; height: 100%; border: none; display: block; }
+
   /* ── SIDEBAR LEFT – Controls ── */
   .sidebar-left {
     background: var(--surface);
@@ -524,9 +528,9 @@
     <h1>🔬 Bildverarbeitung Explorer</h1>
     <div class="subtitle">Interaktives Lernwerkzeug · M.Sc. Hussein Alhasan</div>
     <nav class="page-switch">
-      <a href="bildverarbeitung.html" class="active">Übersicht</a>
-      <a href="bildverarbeitung_explorer.html">Region/Labeling/Watershed</a>
-      <a href="morphologie-explorer.html">Morphologie</a>
+      <a href="javascript:void(0)" class="active" data-view="overview" onclick="switchView('overview')">Übersicht</a>
+      <a href="javascript:void(0)" data-view="explorer" onclick="switchView('explorer')">Region/Labeling/Watershed</a>
+      <a href="javascript:void(0)" data-view="morph" onclick="switchView('morph')">Morphologie</a>
     </nav>
   </div>
   <div class="header-actions">
@@ -569,6 +573,7 @@
   </div>
 </div>
 
+<div id="view-overview">
 <div class="app-layout">
 
   <!-- SIDEBAR LEFT -->
@@ -784,6 +789,33 @@
   </div>
 
 </div>
+</div>
+
+<div id="view-explorer" class="page-frame" style="display:none;">
+  <iframe id="frame-explorer" title="Region Growing / Labeling / Watershed"></iframe>
+</div>
+
+<div id="view-morph" class="page-frame" style="display:none;">
+  <iframe id="frame-morph" title="Morphologie Explorer"></iframe>
+</div>
+
+<script>
+function switchView(view) {
+  document.getElementById('view-overview').style.display = view === 'overview' ? '' : 'none';
+  document.getElementById('view-explorer').style.display = view === 'explorer' ? '' : 'none';
+  document.getElementById('view-morph').style.display = view === 'morph' ? '' : 'none';
+
+  var frameMap = { explorer: ['frame-explorer', 'bildverarbeitung_explorer.html'], morph: ['frame-morph', 'morphologie-explorer.html'] };
+  if (frameMap[view]) {
+    var frame = document.getElementById(frameMap[view][0]);
+    if (!frame.src) frame.src = frameMap[view][1];
+  }
+
+  document.querySelectorAll('.page-switch a').forEach(function (a) {
+    a.classList.toggle('active', a.dataset.view === view);
+  });
+}
+</script>
 
 <script>
 // ─────────────────────────────────────────────
