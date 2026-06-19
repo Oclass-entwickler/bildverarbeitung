@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bildverarbeitung – Lernwerkzeuge · HS Koblenz</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:     #090E1A;
+  --s1:     #0D1626;
+  --s2:     #112035;
+  --s3:     #182844;
+  --bd:     #1E3050;
+  --bd2:    #2B4270;
+  --cyan:   #38BDF8;
+  --mint:   #34D399;
+  --amber:  #FBBF24;
+  --rose:   #F87171;
+  --violet: #A78BFA;
+  --txt:    #E0EAF8;
+  --dim:    #5E80A8;
+  --dimmer: #2E4A6A;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;}
+body{
+  background:
+    radial-gradient(circle at 15% 0%, rgba(56,189,248,.10), transparent 45%),
+    radial-gradient(circle at 85% 15%, rgba(167,139,250,.08), transparent 45%),
+    var(--bg);
+  color:var(--txt);
+  font-family:'Space Grotesk',system-ui,sans-serif;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:64px 24px 48px;
+}
+
+.hdr{text-align:center;max-width:760px;margin-bottom:56px;}
+.kicker{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--cyan);
+  background:rgba(56,189,248,.08);
+  border:1px solid rgba(56,189,248,.25);
+  border-radius:20px;
+  padding:5px 14px;
+  margin-bottom:20px;
+}
+.kicker::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--mint);box-shadow:0 0 8px var(--mint);}
+h1{
+  font-size:2.4rem;font-weight:700;letter-spacing:-.01em;
+  margin-bottom:14px;
+  background:linear-gradient(135deg,var(--txt) 30%,var(--cyan));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.lead{color:var(--dim);font-size:1.02rem;line-height:1.6;}
+
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+  gap:22px;
+  width:100%;
+  max-width:1080px;
+}
+
+.card{
+  position:relative;
+  background:var(--s1);
+  border:1px solid var(--bd);
+  border-radius:18px;
+  padding:28px 26px 26px;
+  text-decoration:none;
+  color:var(--txt);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  overflow:hidden;
+  transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+.card::before{
+  content:'';
+  position:absolute; inset:0;
+  background:radial-gradient(circle at 30% -10%, var(--accent-bg, rgba(56,189,248,.12)), transparent 60%);
+  opacity:0; transition:opacity .25s ease;
+}
+.card:hover{
+  transform:translateY(-4px);
+  border-color:var(--accent, var(--cyan));
+  box-shadow:0 16px 40px -16px rgba(0,0,0,.55);
+}
+.card:hover::before{opacity:1;}
+
+.card-icon{
+  width:46px;height:46px;
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;
+  background:var(--accent-bg, rgba(56,189,248,.12));
+  border:1px solid var(--accent-bd, rgba(56,189,248,.3));
+  position:relative; z-index:1;
+}
+.card h2{font-size:1.18rem;font-weight:600;position:relative;z-index:1;}
+.card p{font-size:.88rem;color:var(--dim);line-height:1.55;position:relative;z-index:1;}
+
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto;position:relative;z-index:1;}
+.tag{
+  font-family:'JetBrains Mono',monospace;
+  font-size:.66rem;letter-spacing:.02em;
+  color:var(--dim);
+  background:var(--s2);
+  border:1px solid var(--bd);
+  border-radius:6px;
+  padding:3px 8px;
+}
+
+.go{
+  margin-top:4px;
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:.82rem;font-weight:600;
+  color:var(--accent, var(--cyan));
+  position:relative;z-index:1;
+}
+.go .arrow{transition:transform .2s ease;}
+.card:hover .go .arrow{transform:translateX(4px);}
+
+.card.c-cyan   { --accent:var(--cyan);   --accent-bg:rgba(56,189,248,.12);  --accent-bd:rgba(56,189,248,.3); }
+.card.c-mint   { --accent:var(--mint);   --accent-bg:rgba(52,211,153,.12);  --accent-bd:rgba(52,211,153,.3); }
+.card.c-violet { --accent:var(--violet); --accent-bg:rgba(167,139,250,.12); --accent-bd:rgba(167,139,250,.3); }
+
+footer{
+  margin-top:56px;
+  font-size:.78rem;
+  color:var(--dimmer);
+  text-align:center;
+}
+</style>
+</head>
+<body>
+
+  <div class="hdr">
+    <span class="kicker">M.Sc. Hussein Alhasan · HS Koblenz</span>
+    <h1>Bildverarbeitung Explorer</h1>
+    <p class="lead">Interaktive Lernwerkzeuge zur Bildverarbeitung — wähle ein Thema, um den passenden Explorer zu öffnen.</p>
+  </div>
+
+  <div class="grid">
+
+    <a class="card c-cyan" href="bildverarbeitung.html">
+      <div class="card-icon">🔬</div>
+      <h2>Bildverarbeitung Explorer</h2>
+      <p>Gesamtüberblick über die Grundlagen der Bildverarbeitung — von Filtern und Transformationen bis zu klassischen Verfahren, interaktiv erklärt.</p>
+      <div class="tags">
+        <span class="tag">Grundlagen</span>
+        <span class="tag">Filter</span>
+        <span class="tag">Interaktiv</span>
+      </div>
+      <span class="go">Öffnen <span class="arrow">→</span></span>
+    </a>
+
+    <a class="card c-mint" href="bildverarbeitung_explorer.html">
+      <div class="card-icon">🧩</div>
+      <h2>Segmentierung &amp; Labeling</h2>
+      <p>Region Growing, Connected-Components-Labeling und Wasserscheiden-Segmentierung Schritt für Schritt visualisiert.</p>
+      <div class="tags">
+        <span class="tag">Region Growing</span>
+        <span class="tag">Labeling</span>
+        <span class="tag">Watershed</span>
+      </div>
+      <span class="go">Öffnen <span class="arrow">→</span></span>
+    </a>
+
+    <a class="card c-violet" href="morphologie-explorer.html">
+      <div class="card-icon">🧪</div>
+      <h2>Morphologie Explorer</h2>
+      <p>Erosion und Dilatation interaktiv ausprobieren und verstehen, wie morphologische Operatoren Bildstrukturen verändern.</p>
+      <div class="tags">
+        <span class="tag">Erosion</span>
+        <span class="tag">Dilatation</span>
+        <span class="tag">Morphologie</span>
+      </div>
+      <span class="go">Öffnen <span class="arrow">→</span></span>
+    </a>
+
+  </div>
+
+  <footer>Bildverarbeitung Explorer · Lernwerkzeuge</footer>
+
+</body>
+</html>
