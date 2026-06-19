@@ -33,27 +33,16 @@ body{background:var(--bg);color:var(--txt);font-family:'Space Grotesk',system-ui
 /* ========== PAGE GRID ========== */
 .layout{display:grid;grid-template-columns:218px 1fr;grid-template-rows:auto 1fr;height:100vh;}
 
-/* ========== HEADER ========== */
+/* ========== HEADER (legend bar) ========== */
 .hdr{
   grid-column:1/-1;
   background:linear-gradient(160deg,#0D1F38 0%,var(--bg) 100%);
   border-bottom:1px solid var(--bd);
-  padding:14px 24px;
-  display:flex;align-items:center;gap:16px;
+  padding:8px 24px;
+  display:flex;align-items:center;
 }
-.hdr-icon{
-  width:44px;height:44px;flex-shrink:0;
-  background:linear-gradient(135deg,rgba(56,189,248,.15),rgba(167,139,250,.15));
-  border:1px solid var(--cyan);border-radius:12px;
-  display:flex;align-items:center;justify-content:center;font-size:22px;
-}
-.hdr h1{font-size:1.2rem;font-weight:700;line-height:1.2;}
-.hdr h1 .er{color:var(--rose);}
-.hdr h1 .dl{color:var(--violet);}
-.hdr h1 .sep{color:var(--dimmer);margin:0 6px;}
-.hdr p{font-size:.76rem;color:var(--dim);margin-top:2px;}
 .hdr-legend{
-  margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex-shrink:0;
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex-shrink:0;
 }
 .leg{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--dim);}
 .leg-dot{width:9px;height:9px;border-radius:2px;}
@@ -240,13 +229,8 @@ body{background:var(--bg);color:var(--txt);font-family:'Space Grotesk',system-ui
 <body>
 <div class="layout">
 
-<!-- HEADER -->
+<!-- LEGEND BAR -->
 <header class="hdr">
-  <div class="hdr-icon">🔬</div>
-  <div>
-    <h1><span class="er">Erosion</span><span class="sep">&amp;</span><span class="dl">Dilatation</span> — Morphologie Explorer</h1>
-    <p>Wähle ein Beispielbild und ein Strukturelement · Fahre mit der Maus über das Eingabebild um die Operation Pixel für Pixel zu verstehen</p>
-  </div>
   <div class="hdr-legend">
     <div class="leg"><div class="leg-dot" style="background:var(--mint)"></div>Eingabe 1</div>
     <div class="leg"><div class="leg-dot" style="background:var(--rose)"></div>Erosion 1</div>
