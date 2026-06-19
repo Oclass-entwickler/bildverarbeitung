@@ -365,6 +365,22 @@ const SE = [
     name:'Diagonal (↘)', desc:'Hauptdiagonale',
     m:[[1,0,0],[0,1,0],[0,0,1]], cy:1, cx:1,
   },
+  {
+    name:'Ring 3×3 (0 im Zentrum)', desc:'8 Nachbarn, Zentrum aus',
+    m:[[1,1,1],[1,0,1],[1,1,1]], cy:1, cx:1,
+  },
+  {
+    name:'Kreuz-Ring (0 im Zentrum)', desc:'N/S/O/W, Zentrum aus',
+    m:[[0,1,0],[1,0,1],[0,1,0]], cy:1, cx:1,
+  },
+  {
+    name:'Diagonal-Ring (0 im Zentrum)', desc:'4 Diagonalen, Zentrum aus',
+    m:[[1,0,1],[0,0,0],[1,0,1]], cy:1, cx:1,
+  },
+  {
+    name:'Diagonal-Linie ↘ (0 im Zentrum)', desc:'Nur die 2 Endpunkte',
+    m:[[1,0,0],[0,0,0],[0,0,1]], cy:1, cx:1,
+  },
 ];
 
 // ══════════════════════════════════════════════
@@ -473,7 +489,7 @@ function renderSB(){
     const cols=s.m[0].length;
     const cells=s.m.flat().map((v,k)=>{
       const di=Math.floor(k/cols),dj=k%cols;
-      return `<div class="smc ${v?'on':'off'}" style="${di===s.cy&&dj===s.cx&&v?'box-shadow:0 0 0 1.5px rgba(251,191,36,.7)':''}"></div>`;
+      return `<div class="smc ${v?'on':'off'}" style="${di===s.cy&&dj===s.cx?'box-shadow:0 0 0 1.5px rgba(251,191,36,.7)':''}"></div>`;
     }).join('');
     const mini=`<div class="se-mini" style="grid-template-columns:repeat(${cols},8px)">${cells}</div>`;
     h+=`<div class="se-card ${i===ST.se?'active':''}" onclick="selSE(${i})">
