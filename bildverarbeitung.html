@@ -498,7 +498,22 @@
     margin-top: 4px;
   }
 
-  @media print { .header-actions, .sidebar-left, .sidebar-right { display: none; } }
+  .page-switch { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  .page-switch a {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 500;
+    text-decoration: none;
+    color: white;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.35);
+    transition: background 0.15s;
+  }
+  .page-switch a:hover { background: rgba(255,255,255,0.3); }
+  .page-switch a.active { background: white; color: var(--accent); font-weight: 600; border-color: white; }
+
+  @media print { .header-actions, .sidebar-left, .sidebar-right, .page-switch { display: none; } }
   @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
 </style>
 </head>
@@ -508,6 +523,11 @@
   <div>
     <h1>🔬 Bildverarbeitung Explorer</h1>
     <div class="subtitle">Interaktives Lernwerkzeug · M.Sc. Hussein Alhasan</div>
+    <nav class="page-switch">
+      <a href="bildverarbeitung.html" class="active">Übersicht</a>
+      <a href="bildverarbeitung_explorer.html">Region/Labeling/Watershed</a>
+      <a href="morphologie-explorer.html">Morphologie</a>
+    </nav>
   </div>
   <div class="header-actions">
     <a href="https://www.linkedin.com/in/hussein-alhasan-b59892164/?locale=en" target="_blank" class="btn btn-white btn-sm" style="text-decoration:none;">

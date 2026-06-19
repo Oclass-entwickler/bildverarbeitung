@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Morphologie Explorer – Erosion & Dilatation</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ========== TOKENS ========== */
+:root {
+  --bg:     #090E1A;
+  --s1:     #0D1626;
+  --s2:     #112035;
+  --s3:     #182844;
+  --bd:     #1E3050;
+  --bd2:    #2B4270;
+  --cyan:   #38BDF8;
+  --mint:   #34D399;
+  --amber:  #FBBF24;
+  --rose:   #F87171;
+  --violet: #A78BFA;
+  --txt:    #E0EAF8;
+  --dim:    #5E80A8;
+  --dimmer: #2E4A6A;
+  --mint-bg: #05200F;
+  --rose-bg: #200808;
+  --violet-bg: #140A22;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--txt);font-family:'Space Grotesk',system-ui,sans-serif;}
+
+/* ========== PAGE GRID ========== */
+.layout{display:grid;grid-template-columns:218px 1fr;grid-template-rows:auto 1fr;height:100vh;}
+
+/* ========== HEADER ========== */
+.hdr{
+  grid-column:1/-1;
+  background:linear-gradient(160deg,#0D1F38 0%,var(--bg) 100%);
+  border-bottom:1px solid var(--bd);
+  padding:14px 24px;
+  display:flex;align-items:center;gap:16px;
+}
+.hdr-icon{
+  width:44px;height:44px;flex-shrink:0;
+  background:linear-gradient(135deg,rgba(56,189,248,.15),rgba(167,139,250,.15));
+  border:1px solid var(--cyan);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;font-size:22px;
+}
+.hdr h1{font-size:1.2rem;font-weight:700;line-height:1.2;}
+.hdr h1 .er{color:var(--rose);}
+.hdr h1 .dl{color:var(--violet);}
+.hdr h1 .sep{color:var(--dimmer);margin:0 6px;}
+.hdr p{font-size:.76rem;color:var(--dim);margin-top:2px;}
+.hdr-legend{
+  margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex-shrink:0;
+}
+.leg{display:flex;align-items:center;gap:5px;font-size:.68rem;color:var(--dim);}
+.leg-dot{width:9px;height:9px;border-radius:2px;}
+.page-switch{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;}
+.page-switch a{padding:4px 10px;border-radius:20px;font-size:.68rem;text-decoration:none;color:var(--dim);background:var(--s2);border:1px solid var(--bd);transition:all .15s;}
+.page-switch a:hover{color:var(--txt);border-color:var(--cyan);}
+.page-switch a.active{color:var(--bg);background:var(--cyan);border-color:var(--cyan);font-weight:600;}
+
+/* ========== SIDEBAR ========== */
+.sb{
+  background:var(--s1);border-right:1px solid var(--bd);
+  padding:14px 10px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:4px;
+}
+.sb-sec-title{
+  font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--cyan);padding:6px 6px 4px;margin-top:6px;
+}
+.ex-card,.se-card{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 8px;
+  background:var(--s2);border:1.5px solid var(--bd);border-radius:8px;
+  cursor:pointer;transition:border-color .12s,background .12s;
+  margin-bottom:2px;
+}
+.ex-card:hover,.se-card:hover{background:var(--s3);border-color:var(--bd2);}
+.ex-card.active{border-color:var(--cyan);background:rgba(56,189,248,.07);}
+.se-card.active{border-color:var(--amber);background:rgba(251,191,36,.07);}
+.ex-thumb{
+  display:grid;grid-template-columns:repeat(8,4px);gap:1px;flex-shrink:0;
+}
+.etc{width:4px;height:4px;border-radius:.5px;}
+.etc.on{background:var(--mint);}
+.etc.off{background:var(--s3);}
+.card-lbl{min-width:0;}
+.card-lbl strong{display:block;font-size:.73rem;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.card-lbl span{font-size:.65rem;color:var(--dim);}
+.se-mini{display:grid;gap:2px;flex-shrink:0;}
+.smc{width:8px;height:8px;border-radius:1px;}
+.smc.on{background:var(--amber);}
+.smc.off{background:var(--s3);border:1px solid var(--bd);}
+
+/* ========== MAIN ========== */
+.main{padding:16px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:14px;}
+
+/* ========== FORMULA ROWS ========== */
+.formula-row{
+  display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap;
+}
+.grid-group{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.glabel{
+  font-size:.58rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--dim);text-align:center;
+}
+.glabel.er{color:var(--rose);}
+.glabel.dl{color:var(--violet);}
+.glabel.se{color:var(--amber);}
+
+/* ========== BINARY GRID ========== */
+.bin-grid{
+  display:grid;gap:2px;
+  background:var(--bd);padding:2px;
+  border-radius:6px;border:1px solid var(--bd2);
+}
+/* Input cells */
+.ci{
+  width:24px;height:24px;border-radius:2px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;
+  cursor:crosshair;user-select:none;transition:box-shadow .08s;
+}
+.ci.v1{background:var(--mint);color:var(--mint-bg);}
+.ci.v0{background:var(--s3);color:var(--dimmer);}
+/* Hover states for input cells */
+.ci.ov{background:rgba(251,191,36,.45)!important;box-shadow:inset 0 0 0 1.5px var(--amber);color:var(--amber)!important;}
+.ci.ov-c{background:rgba(56,189,248,.35)!important;box-shadow:inset 0 0 0 2px var(--cyan);color:var(--cyan)!important;}
+.ci.oob{background:rgba(248,113,113,.25)!important;box-shadow:inset 0 0 0 1.5px rgba(248,113,113,.7);color:var(--rose)!important;}
+
+/* Erosion result cells */
+.cr{
+  width:24px;height:24px;border-radius:2px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;
+  user-select:none;transition:box-shadow .08s;
+}
+.cr.er1{background:var(--rose);color:var(--rose-bg);}
+.cr.er0{background:var(--s3);color:var(--dimmer);}
+.cr.dl1{background:var(--violet);color:var(--violet-bg);}
+.cr.dl0{background:var(--s3);color:var(--dimmer);}
+/* Focus on hover */
+.cr.focus{box-shadow:0 0 0 2.5px var(--cyan)!important;z-index:1;position:relative;}
+
+/* ========== SE DISPLAY ========== */
+.se-disp{
+  display:grid;gap:3px;
+  background:var(--bd);padding:3px;
+  border-radius:6px;border:1px solid var(--bd2);
+}
+.sec{
+  width:30px;height:30px;border-radius:2px;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono',monospace;font-size:.68rem;font-weight:700;
+}
+.sec.se1{background:var(--amber);color:#2A1500;}
+.sec.se0{background:var(--s2);color:var(--dimmer);border:1px solid var(--bd);}
+.sec.se-c{box-shadow:inset 0 0 0 2px rgba(255,255,255,.35);}
+
+/* ========== OPERATOR ========== */
+.op-sym{
+  font-family:'JetBrains Mono',monospace;font-size:1.3rem;
+  color:var(--dimmer);flex-shrink:0;
+  align-self:center;margin-top:20px;
+}
+
+/* ========== OP BADGE ========== */
+.op-sec{display:flex;flex-direction:column;gap:6px;}
+.op-hdr{display:flex;align-items:center;gap:8px;}
+.op-badge{
+  font-size:.6rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 8px;border-radius:99px;
+}
+.op-badge.er{background:rgba(248,113,113,.12);color:var(--rose);border:1px solid rgba(248,113,113,.25);}
+.op-badge.dl{background:rgba(167,139,250,.12);color:var(--violet);border:1px solid rgba(167,139,250,.25);}
+.op-rule{font-family:'JetBrains Mono',monospace;font-size:.68rem;color:var(--dim);}
+
+/* ========== DIVIDER ========== */
+.div{height:1px;background:var(--bd);flex-shrink:0;}
+
+/* ========== STATS ========== */
+.stats{display:flex;gap:8px;flex-wrap:wrap;}
+.stat{
+  background:var(--s1);border:1px solid var(--bd);border-radius:8px;
+  padding:8px 14px;display:flex;flex-direction:column;align-items:center;min-width:96px;
+}
+.stat-n{
+  font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:700;line-height:1;
+}
+.stat-l{font-size:.62rem;color:var(--dim);margin-top:3px;text-align:center;}
+.stat.inp .stat-n{color:var(--mint);}
+.stat.er  .stat-n{color:var(--rose);}
+.stat.dl  .stat-n{color:var(--violet);}
+
+/* ========== HOVER BOX ========== */
+.hbox{
+  background:var(--s1);border:1px solid var(--bd);border-radius:8px;
+  padding:9px 14px;font-size:.75rem;color:var(--txt);
+  min-height:36px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.badge{
+  display:inline-flex;align-items:center;gap:3px;
+  padding:2px 8px;border-radius:99px;font-size:.66rem;font-weight:600;
+}
+.b-er-y{background:rgba(248,113,113,.15);color:var(--rose);border:1px solid rgba(248,113,113,.3);}
+.b-er-n{background:rgba(30,48,80,.6);color:var(--dim);border:1px solid var(--bd);}
+.b-dl-y{background:rgba(167,139,250,.15);color:var(--violet);border:1px solid rgba(167,139,250,.3);}
+.b-dl-n{background:rgba(30,48,80,.6);color:var(--dim);border:1px solid var(--bd);}
+
+/* ========== EXPLANATION ========== */
+.expl{
+  background:var(--s1);border:1px solid var(--bd);border-radius:10px;
+  padding:14px 18px;
+}
+.expl-title{
+  font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dim);margin-bottom:10px;
+}
+.expl-cols{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.expl-b{background:var(--s2);border-radius:7px;padding:11px;}
+.expl-bh{font-size:.7rem;font-weight:700;margin-bottom:5px;display:flex;align-items:center;gap:5px;}
+.expl-bh.er{color:var(--rose);}
+.expl-bh.dl{color:var(--violet);}
+.expl-rule{
+  font-family:'JetBrains Mono',monospace;font-size:.64rem;color:var(--dim);
+  background:var(--s3);padding:4px 8px;border-radius:4px;margin-bottom:7px;line-height:1.45;
+}
+.expl-txt{font-size:.74rem;color:var(--txt);line-height:1.6;opacity:.9;}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:99px;}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- HEADER -->
+<header class="hdr">
+  <div class="hdr-icon">🔬</div>
+  <div>
+    <h1><span class="er">Erosion</span><span class="sep">&amp;</span><span class="dl">Dilatation</span> — Morphologie Explorer</h1>
+    <p>Wähle ein Beispielbild und ein Strukturelement · Fahre mit der Maus über das Eingabebild um die Operation Pixel für Pixel zu verstehen</p>
+    <nav class="page-switch">
+      <a href="bildverarbeitung.html">Übersicht</a>
+      <a href="bildverarbeitung_explorer.html">Region/Labeling/Watershed</a>
+      <a href="morphologie-explorer.html" class="active">Morphologie</a>
+    </nav>
+  </div>
+  <div class="hdr-legend">
+    <div class="leg"><div class="leg-dot" style="background:var(--mint)"></div>Eingabe 1</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--rose)"></div>Erosion 1</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--violet)"></div>Dilatation 1</div>
+    <div class="leg"><div class="leg-dot" style="background:var(--amber)"></div>Strukturelement</div>
+    <div class="leg"><div class="leg-dot" style="background:rgba(56,189,248,.6);border:1px solid var(--cyan)"></div>Zentrum</div>
+  </div>
+</header>
+
+<!-- SIDEBAR -->
+<aside class="sb" id="sb"></aside>
+
+<!-- MAIN -->
+<main class="main" id="main"></main>
+
+</div>
+<script>
+// ══════════════════════════════════════════════
+//  DATA
+// ══════════════════════════════════════════════
+const EX = [
+  {
+    name:'Gefülltes Quadrat', hint:'Kompaktes Objekt',
+    grid:[
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,1,1,1,1,0,0],
+      [0,0,1,1,1,1,0,0],
+      [0,0,1,1,1,1,0,0],
+      [0,0,1,1,1,1,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+    ],
+    er:'Das Quadrat schrumpft gleichmäßig von allen Seiten. Nur Pixel, deren gesamte SE-Nachbarschaft vollständig im Objekt liegt, bleiben auf 1. Mit 3×3-SE verliert das Quadrat je eine Pixelreihe auf jeder Seite.',
+    dl:'Das Objekt wächst gleichmäßig nach außen. Jeder 0-Pixel, der von einem 1-Pixel im SE-Radius erreicht wird, wird auf 1 gesetzt. Das Quadrat gewinnt einen Rand.',
+  },
+  {
+    name:'Dünne H-Linie', hint:'Nur 1 Pixel breit',
+    grid:[
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,1,1,1,1,1,1,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+    ],
+    er:'Eine 1-Pixel-Linie überlebt die Erosion mit einem 2D-SE (Quadrat, Kreuz) nicht – oben und unten fehlen 1-Pixel für die SE. Probiere die H-Linie (1×3): nur sie kann die horizontale Linie erhalten!',
+    dl:'Die Linie wächst je nach SE nach oben/unten. Mit Kreuz- oder Quadrat-SE entsteht aus der 1-Pixel-Linie ein 3-Pixel breites Band.',
+  },
+  {
+    name:'Zwei Objekte', hint:'1 Pixel Abstand',
+    grid:[
+      [0,0,0,0,0,0,0,0],
+      [0,1,1,0,1,1,0,0],
+      [0,1,1,0,1,1,0,0],
+      [0,1,1,0,1,1,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+    ],
+    er:'Beide Objekte schrumpfen. Da sie nur 2 Pixel breit sind, können sie durch Erosion mit einem 3×3-SE komplett verschwinden.',
+    dl:'Die Objekte wachsen nach außen. Da sie nur 1 Pixel Abstand haben, verschmelzen sie nach der Dilatation zu einem einzigen Objekt! Das ist ein typischer Effekt zum Verbinden naher Strukturen.',
+  },
+  {
+    name:'Objekt mit Loch', hint:'Innere Leerstelle',
+    grid:[
+      [0,0,0,0,0,0,0,0],
+      [0,1,1,1,1,1,0,0],
+      [0,1,1,1,1,1,0,0],
+      [0,1,1,0,1,1,0,0],
+      [0,1,1,1,1,1,0,0],
+      [0,1,1,1,1,1,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0],
+    ],
+    er:'Das Loch wächst unter Erosion (die SE passt an der Innenkante nicht ins Objekt). Gleichzeitig schrumpft der Außenrand. Bei zu starker Erosion kann das Objekt vollständig verschwinden.',
+    dl:'Das Loch wird kleiner oder verschwindet: die 1-Pixel rund um das Loch übertragen ihre Dilatation nach innen. Gleichzeitig wächst der Außenrand. Dilatation kann kleine Löcher schließen.',
+  },
+  {
+    name:'Diagonale Linie', hint:'1 Pixel breit, schräg',
+    grid:[
+      [1,0,0,0,0,0,0,0],
+      [0,1,0,0,0,0,0,0],
+      [0,0,1,0,0,0,0,0],
+      [0,0,0,1,0,0,0,0],
+      [0,0,0,0,1,0,0,0],
+      [0,0,0,0,0,1,0,0],
+      [0,0,0,0,0,0,1,0],
+      [0,0,0,0,0,0,0,1],
+    ],
+    er:'Mit Kreuz oder Quadrat-SE: Die Diagonale verschwindet – kein Pixel erfüllt die Bedingung (schräge Nachbarn fehlen). Mit dem Diagonal-SE (↘): Die Linie bleibt genau erhalten, weil die SE perfekt passt!',
+    dl:'Mit Kreuz-SE entsteht ein breites diagonales Band. Mit Diagonal-SE (↘) bleibt die Linie schmal. Probiere verschiedene SEs und beobachte die Richtungsabhängigkeit!',
+  },
+  {
+    name:'Rauschen (Noise)', hint:'Isolierte Einzel-Pixel',
+    grid:[
+      [1,0,0,1,0,0,0,1],
+      [0,0,1,0,0,0,1,0],
+      [0,1,0,0,0,1,0,0],
+      [1,0,0,0,1,0,0,1],
+      [0,0,1,1,0,0,1,0],
+      [0,1,0,0,0,1,0,0],
+      [1,0,0,1,0,0,0,1],
+      [0,0,1,0,0,1,0,0],
+    ],
+    er:'Klassischer Rauschfilter: Alle isolierten Einzel-Pixel verschwinden, da kein Nachbar vorhanden ist (SE-Bedingung nie erfüllt). Das Ergebnis ist fast leer. Erosion = Rausch­entfernung!',
+    dl:'Jeder isolierte Pixel wächst zu einem kleinen Fleck. Nahe Pixel wachsen zusammen. Das Bild füllt sich stark auf. Dilatation kann Lücken und fehlende Pixel wiederherstellen.',
+  },
+];
+
+const SE = [
+  {
+    name:'Quadrat 3×3', desc:'Alle 8 Nachbarn',
+    m:[[1,1,1],[1,1,1],[1,1,1]], cy:1, cx:1,
+  },
+  {
+    name:'Kreuz (+)', desc:'H + V Nachbarn',
+    m:[[0,1,0],[1,1,1],[0,1,0]], cy:1, cx:1,
+  },
+  {
+    name:'H-Linie (1×3)', desc:'Nur horizontal',
+    m:[[1,1,1]], cy:0, cx:1,
+  },
+  {
+    name:'V-Linie (3×1)', desc:'Nur vertikal',
+    m:[[1],[1],[1]], cy:1, cx:0,
+  },
+  {
+    name:'Diagonal (↘)', desc:'Hauptdiagonale',
+    m:[[1,0,0],[0,1,0],[0,0,1]], cy:1, cx:1,
+  },
+];
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let ST = { ex:0, se:0, er:null, dl:null };
+
+// ══════════════════════════════════════════════
+//  MORPHOLOGY
+// ══════════════════════════════════════════════
+function erode(g, m, cy, cx) {
+  const R=g.length, C=g[0].length, SR=m.length, SC=m[0].length;
+  return g.map((row,i)=>row.map((_,j)=>{
+    for(let di=0;di<SR;di++) for(let dj=0;dj<SC;dj++) {
+      if(!m[di][dj]) continue;
+      const ni=i+di-cy, nj=j+dj-cx;
+      if(ni<0||ni>=R||nj<0||nj>=C||!g[ni][nj]) return 0;
+    }
+    return 1;
+  }));
+}
+
+function dilate(g, m, cy, cx) {
+  const R=g.length, C=g[0].length, SR=m.length, SC=m[0].length;
+  const out=Array.from({length:R},()=>Array(C).fill(0));
+  for(let i=0;i<R;i++) for(let j=0;j<C;j++) {
+    if(!g[i][j]) continue;
+    for(let di=0;di<SR;di++) for(let dj=0;dj<SC;dj++) {
+      if(!m[di][dj]) continue;
+      const ni=i+di-cy, nj=j+dj-cx;
+      if(ni>=0&&ni<R&&nj>=0&&nj<C) out[ni][nj]=1;
+    }
+  }
+  return out;
+}
+
+function ones(g){return g.flat().reduce((a,v)=>a+v,0);}
+
+function checkEr(g,m,cy,cx,i,j){
+  const R=g.length,C=g[0].length;
+  for(let di=0;di<m.length;di++) for(let dj=0;dj<m[0].length;dj++){
+    if(!m[di][dj]) continue;
+    const ni=i+di-cy,nj=j+dj-cx;
+    if(ni<0||ni>=R||nj<0||nj>=C||!g[ni][nj]) return false;
+  }
+  return true;
+}
+
+function checkDl(g,m,cy,cx,i,j){
+  const R=g.length,C=g[0].length;
+  for(let di=0;di<m.length;di++) for(let dj=0;dj<m[0].length;dj++){
+    if(!m[di][dj]) continue;
+    // Which source pixel places this SE position onto (i,j)?
+    const si=i-(di-cy), sj=j-(dj-cx);
+    if(si>=0&&si<R&&sj>=0&&sj<C&&g[si][sj]) return true;
+  }
+  return false;
+}
+
+// ══════════════════════════════════════════════
+//  BUILD HTML
+// ══════════════════════════════════════════════
+function makeInputGrid(g, prefix){
+  const C=g[0].length;
+  const cells=g.map((row,i)=>row.map((v,j)=>
+    `<div class="ci v${v}" id="${prefix}-${i}-${j}"
+      onmouseenter="hov(${i},${j})"
+      onmouseleave="unhov()"
+    >${v}</div>`
+  ).join('')).join('');
+  return `<div class="bin-grid" style="grid-template-columns:repeat(${C},24px)">${cells}</div>`;
+}
+
+function makeResultGrid(g, type){
+  const C=g[0].length;
+  const cells=g.map((row,i)=>row.map((v,j)=>
+    `<div class="cr ${type}${v}" id="${type}-${i}-${j}">${v}</div>`
+  ).join('')).join('');
+  return `<div class="bin-grid" style="grid-template-columns:repeat(${C},24px)">${cells}</div>`;
+}
+
+function makeSEDisp(s){
+  const rows=s.m.length, cols=s.m[0].length;
+  const cells=s.m.map((row,di)=>row.map((v,dj)=>{
+    const isC=di===s.cy&&dj===s.cx;
+    return `<div class="sec se${v} ${isC?'se-c':''}">${v}</div>`;
+  }).join('')).join('');
+  return `<div class="se-disp" style="grid-template-columns:repeat(${cols},30px)">${cells}</div>`;
+}
+
+// ══════════════════════════════════════════════
+//  RENDER SIDEBAR
+// ══════════════════════════════════════════════
+function renderSB(){
+  const sb=document.getElementById('sb');
+  let h=`<div class="sb-sec-title">📸 Beispiel wählen</div>`;
+  EX.forEach((e,i)=>{
+    const thumb=e.grid.flat().map(v=>`<div class="etc ${v?'on':'off'}"></div>`).join('');
+    h+=`<div class="ex-card ${i===ST.ex?'active':''}" onclick="selEx(${i})">
+      <div class="ex-thumb">${thumb}</div>
+      <div class="card-lbl"><strong>${i+1}. ${e.name}</strong><span>${e.hint}</span></div>
+    </div>`;
+  });
+  h+=`<div class="sb-sec-title">⬛ Strukturelement</div>`;
+  SE.forEach((s,i)=>{
+    const cols=s.m[0].length;
+    const cells=s.m.flat().map((v,k)=>{
+      const di=Math.floor(k/cols),dj=k%cols;
+      return `<div class="smc ${v?'on':'off'}" style="${di===s.cy&&dj===s.cx&&v?'box-shadow:0 0 0 1.5px rgba(251,191,36,.7)':''}"></div>`;
+    }).join('');
+    const mini=`<div class="se-mini" style="grid-template-columns:repeat(${cols},8px)">${cells}</div>`;
+    h+=`<div class="se-card ${i===ST.se?'active':''}" onclick="selSE(${i})">
+      ${mini}
+      <div class="card-lbl"><strong>${s.name}</strong><span>${s.desc}</span></div>
+    </div>`;
+  });
+  sb.innerHTML=h;
+}
+
+// ══════════════════════════════════════════════
+//  RENDER MAIN
+// ══════════════════════════════════════════════
+function renderMain(){
+  const ex=EX[ST.ex], se=SE[ST.se];
+  ST.er=erode(ex.grid,se.m,se.cy,se.cx);
+  ST.dl=dilate(ex.grid,se.m,se.cy,se.cx);
+  const nI=ones(ex.grid), nE=ones(ST.er), nD=ones(ST.dl);
+
+  const seD=makeSEDisp(se);
+  const inG1=makeInputGrid(ex.grid,'a');
+  const inG2=makeInputGrid(ex.grid,'b');
+  const erG=makeResultGrid(ST.er,'er');
+  const dlG=makeResultGrid(ST.dl,'dl');
+
+  document.getElementById('main').innerHTML=`
+    <!-- EROSION ROW -->
+    <div class="op-sec">
+      <div class="op-hdr">
+        <div class="op-badge er">EROSION</div>
+        <div class="op-rule">A ⊖ B &nbsp;·&nbsp; Pixel = 1 wenn das SE komplett im Objekt liegt</div>
+      </div>
+      <div class="formula-row">
+        <div class="grid-group">
+          <div class="glabel">Eingabe A</div>${inG1}
+        </div>
+        <div class="op-sym">⊖</div>
+        <div class="grid-group">
+          <div class="glabel se">SE (B)</div>${seD}
+        </div>
+        <div class="op-sym">=</div>
+        <div class="grid-group">
+          <div class="glabel er">Erosion A ⊖ B</div>${erG}
+        </div>
+      </div>
+    </div>
+
+    <div class="div"></div>
+
+    <!-- DILATION ROW -->
+    <div class="op-sec">
+      <div class="op-hdr">
+        <div class="op-badge dl">DILATATION</div>
+        <div class="op-rule">A ⊕ B &nbsp;·&nbsp; Setze SE auf jeden 1-Pixel → fülle alle abgedeckten Positionen</div>
+      </div>
+      <div class="formula-row">
+        <div class="grid-group">
+          <div class="glabel">Eingabe A</div>${inG2}
+        </div>
+        <div class="op-sym">⊕</div>
+        <div class="grid-group">
+          <div class="glabel se">SE (B)</div>${seD}
+        </div>
+        <div class="op-sym">=</div>
+        <div class="grid-group">
+          <div class="glabel dl">Dilatation A ⊕ B</div>${dlG}
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats">
+      <div class="stat inp">
+        <div class="stat-n">${nI}</div>
+        <div class="stat-l">Eingabe-Pixel (1)</div>
+      </div>
+      <div class="stat er">
+        <div class="stat-n">${nE}</div>
+        <div class="stat-l">Erosion · ${nI>0?Math.round(nE/nI*100):0}% erhalten</div>
+      </div>
+      <div class="stat dl">
+        <div class="stat-n">${nD}</div>
+        <div class="stat-l">Dilatation · +${nD-nI} Pixel</div>
+      </div>
+    </div>
+
+    <!-- HOVER INFO -->
+    <div class="hbox" id="hbox">
+      💡 Fahre mit der Maus über das Eingabebild — das SE wird zentriert auf diesen Pixel gelegt und du siehst das Ergebnis für Erosion und Dilatation.
+    </div>
+
+    <!-- EXPLANATION -->
+    <div class="expl">
+      <div class="expl-title">📘 Erklärung — ${ex.name} mit Strukturelement „${se.name}"</div>
+      <div class="expl-cols">
+        <div class="expl-b">
+          <div class="expl-bh er">⊖ Erosion A ⊖ B</div>
+          <div class="expl-rule">result[i,j] = 1 &nbsp;⟺&nbsp; ∀(di,dj)∈SE : input[i+di, j+dj] = 1</div>
+          <div class="expl-txt">${ex.er}</div>
+        </div>
+        <div class="expl-b">
+          <div class="expl-bh dl">⊕ Dilatation A ⊕ B</div>
+          <div class="expl-rule">result[i+di, j+dj] = 1 &nbsp;⟺&nbsp; input[i,j]=1 ∧ (di,dj)∈SE</div>
+          <div class="expl-txt">${ex.dl}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ══════════════════════════════════════════════
+//  HOVER
+// ══════════════════════════════════════════════
+function hov(i,j){
+  const ex=EX[ST.ex], se=SE[ST.se];
+  const R=ex.grid.length, C=ex.grid[0].length;
+  const SR=se.m.length, SC=se.m[0].length;
+  clrHov();
+
+  let oobCount=0;
+  for(let di=0;di<SR;di++) for(let dj=0;dj<SC;dj++){
+    if(!se.m[di][dj]) continue;
+    const ni=i+di-se.cy, nj=j+dj-se.cx;
+    const isC=di===se.cy&&dj===se.cx;
+    const oob=ni<0||ni>=R||nj<0||nj>=C;
+    if(oob){oobCount++;continue;}
+    const cls=isC?'ov-c':'ov';
+    ['a','b'].forEach(p=>{
+      const el=document.getElementById(`${p}-${ni}-${nj}`);
+      if(el) el.classList.add(cls);
+    });
+  }
+
+  // Focus result cells
+  ['er','dl'].forEach(t=>{
+    const el=document.getElementById(`${t}-${i}-${j}`);
+    if(el) el.classList.add('focus');
+  });
+
+  const erFits=checkEr(ex.grid,se.m,se.cy,se.cx,i,j);
+  const dlHits=checkDl(ex.grid,se.m,se.cy,se.cx,i,j);
+  const oobNote=oobCount?`<span style="color:var(--rose);font-size:.66rem">⚠ ${oobCount} SE-Positionen außerhalb</span>`:'';
+
+  const hb=document.getElementById('hbox');
+  if(hb) hb.innerHTML=`
+    <span style="color:var(--dim)">Pixel <strong style="color:var(--txt);font-family:'JetBrains Mono',monospace">(${i},${j})</strong> · Wert: <strong style="color:var(--txt)">${ex.grid[i][j]}</strong> ${oobNote}</span>
+    <span class="badge ${erFits?'b-er-y':'b-er-n'}">${erFits?'✓':'✗'} Erosion: SE ${erFits?'passt':'passt nicht'} → <strong>${ST.er[i][j]}</strong></span>
+    <span class="badge ${dlHits?'b-dl-y':'b-dl-n'}">${dlHits?'✓':'✗'} Dilatation: ${dlHits?'SE trifft':'kein Treffer'} → <strong>${ST.dl[i][j]}</strong></span>
+  `;
+}
+
+function unhov(){
+  clrHov();
+  const hb=document.getElementById('hbox');
+  if(hb) hb.innerHTML='💡 Fahre mit der Maus über das Eingabebild — das SE wird zentriert auf diesen Pixel gelegt und du siehst das Ergebnis für Erosion und Dilatation.';
+}
+
+function clrHov(){
+  document.querySelectorAll('.ov,.ov-c,.oob,.focus').forEach(el=>{
+    el.classList.remove('ov','ov-c','oob','focus');
+  });
+}
+
+// ══════════════════════════════════════════════
+//  SELECT
+// ══════════════════════════════════════════════
+function selEx(i){ST.ex=i;renderSB();renderMain();}
+function selSE(i){ST.se=i;renderSB();renderMain();}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+renderSB();
+renderMain();
+</script>
+</body>
+</html>

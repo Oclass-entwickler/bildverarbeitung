@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bildverarbeitung Explorer</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #181c27;
+    --bg3: #1e2435;
+    --card: #232a3e;
+    --border: #2e3856;
+    --accent: #4f8ef7;
+    --accent2: #7c5fe6;
+    --accent3: #22d9a0;
+    --yellow: #f5c542;
+    --red: #e84a5f;
+    --text: #e8eaf2;
+    --text2: #8a93b8;
+    --text3: #5a6285;
+    --font: 'Segoe UI', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+  /* NAV */
+  nav { background: var(--bg2); border-bottom: 1px solid var(--border); padding: 0 24px; display: flex; align-items: center; gap: 0; position: sticky; top: 0; z-index: 100; }
+  .nav-brand { font-size: 15px; font-weight: 600; color: var(--accent); padding: 16px 20px 16px 0; border-right: 1px solid var(--border); margin-right: 8px; letter-spacing: 0.02em; }
+  .nav-tab { padding: 16px 18px; font-size: 13px; color: var(--text2); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; user-select: none; white-space: nowrap; }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .page-switch { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .page-switch a { padding: 5px 12px; border-radius: 20px; font-size: 12px; text-decoration: none; color: var(--text2); background: var(--bg3); border: 1px solid var(--border); transition: all 0.15s; white-space: nowrap; }
+  .page-switch a:hover { color: var(--text); border-color: var(--accent); }
+  .page-switch a.active { color: #fff; background: var(--accent); border-color: var(--accent); }
+
+  /* SECTIONS */
+  .section { display: none; padding: 28px 28px 40px; max-width: 1100px; margin: 0 auto; }
+  .section.active { display: block; }
+
+  .section-header { margin-bottom: 24px; }
+  .section-header h1 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .section-header p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+  /* CARDS / PANELS */
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; margin-bottom: 16px; }
+  .panel-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 14px; }
+
+  /* CONTROLS */
+  .ctrl-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 12px; }
+  .ctrl-group { display: flex; flex-direction: column; gap: 5px; }
+  .ctrl-label { font-size: 12px; color: var(--text2); }
+  select, button { background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; transition: border-color 0.15s; }
+  select:hover, button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
+  button.primary:hover { background: #3a7ae0; }
+  button.secondary { background: var(--bg3); color: var(--text2); }
+  input[type=range] { accent-color: var(--accent); width: 140px; }
+  .val-badge { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; font-size: 13px; font-weight: 600; color: var(--accent); min-width: 36px; text-align: center; }
+
+  /* GRID DISPLAY */
+  .grid-wrap { overflow-x: auto; }
+  table.pgrid { border-collapse: collapse; font-size: 13px; }
+  table.pgrid td { width: 38px; height: 34px; text-align: center; border: 1px solid var(--border); font-weight: 500; transition: background 0.12s; }
+  td.pix-bg { background: #111827; color: var(--text3); }
+  td.pix-fg { background: #e8eaf2; color: #111; }
+  td.pix-seed-blue { background: #1a6fbf; color: #fff; font-weight: 700; }
+  td.pix-seed-yellow { background: #c47a00; color: #fff; font-weight: 700; }
+  td.pix-blue { background: #2255a0; color: #a8c8ff; }
+  td.pix-yellow { background: #8b5e00; color: #ffe08a; }
+  td.pix-label { background: var(--bg3); color: var(--text2); font-size: 11px; }
+  /* label colors */
+  td.lbl-0 { background: #0f1117; color: var(--text3); }
+  td.lbl-1 { background: #1a3a6b; color: #7ab4ff; }
+  td.lbl-2 { background: #1a5c36; color: #6decb2; }
+  td.lbl-3 { background: #5c1a3a; color: #ff88cc; }
+  td.lbl-4 { background: #5c3a00; color: #ffcc66; }
+  td.lbl-5 { background: #3a1a5c; color: #bb88ff; }
+  td.lbl-6 { background: #1a5c5c; color: #66ffee; }
+  td.lbl-7 { background: #5c1a1a; color: #ff9999; }
+  td.lbl-8 { background: #2a4a00; color: #aaff44; }
+
+  /* STEP DISPLAY */
+  .step-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; font-size: 13px; color: var(--text2); line-height: 1.7; margin-top: 12px; min-height: 54px; }
+  .step-box strong { color: var(--text); }
+  .step-box .tag { display: inline-block; background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 7px; font-size: 12px; margin: 0 2px; font-family: monospace; }
+
+  /* STATS ROW */
+  .stats-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 14px; }
+  .stat-chip { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 16px; text-align: center; min-width: 110px; }
+  .stat-chip .sv { font-size: 22px; font-weight: 600; color: var(--accent); }
+  .stat-chip .sl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  /* EQUIVALENCES */
+  .equiv-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .equiv-chip { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; font-family: monospace; color: var(--text2); }
+  .equiv-chip.active { border-color: var(--accent2); color: #c8a8ff; background: #2a1f4a; }
+
+  /* WATERSHED */
+  .ws-canvas-wrap { position: relative; }
+  canvas.ws-canvas { border: 1px solid var(--border); border-radius: 8px; background: var(--bg3); display: block; }
+
+  /* TWO-COL LAYOUT */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 750px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* LEGEND */
+  .legend-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+  .leg { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+  .leg-dot { width: 14px; height: 14px; border-radius: 3px; }
+
+  /* PHASE BADGE */
+  .phase-badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-bottom: 10px; }
+  .phase-badge.p1 { background: #1a3a6b; color: #7ab4ff; }
+  .phase-badge.p2 { background: #1a5c36; color: #6decb2; }
+
+  /* TOOLTIP */
+  .tooltip { position: absolute; background: var(--card); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; font-size: 12px; color: var(--text); pointer-events: none; display: none; z-index: 50; }
+
+  /* EXAMPLE SELECTOR */
+  .example-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .ex-tab { padding: 5px 14px; border-radius: 20px; font-size: 12px; border: 1px solid var(--border); cursor: pointer; color: var(--text2); background: var(--bg3); transition: all 0.12s; }
+  .ex-tab:hover { border-color: var(--accent); color: var(--text); }
+  .ex-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* EXPLAINER CARDS */
+  .algo-card { border-left: 3px solid var(--accent2); padding: 10px 14px; background: var(--bg2); border-radius: 0 8px 8px 0; margin-bottom: 10px; font-size: 13px; color: var(--text2); line-height: 1.6; }
+  .algo-card b { color: var(--text); }
+
+  hr.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand">BV Explorer</div>
+  <div class="nav-tab active" onclick="showTab('rg')">Region Growing</div>
+  <div class="nav-tab" onclick="showTab('lb')">Labeling</div>
+  <div class="nav-tab" onclick="showTab('ws')">Watershed</div>
+  <div class="page-switch">
+    <a href="bildverarbeitung.html">Übersicht</a>
+    <a href="bildverarbeitung_explorer.html" class="active">Region/Labeling/Watershed</a>
+    <a href="morphologie-explorer.html">Morphologie</a>
+  </div>
+</nav>
+
+<!-- ============================  TAB 1: REGION GROWING  ============================ -->
+<div id="tab-rg" class="section active">
+  <div class="section-header">
+    <h1>Region Growing</h1>
+    <p>Wähle ein Beispielbild, den Schwellwert t und die Nachbarschaft. Das Verfahren startet von einem Saatkorn und wächst in alle akzeptierten Nachbarn (|Pixelwert − Saatkornwert| ≤ t).</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Einstellungen</div>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <span class="ctrl-label">Beispiel</span>
+        <div class="example-tabs" id="rg-examples"></div>
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <span class="ctrl-label">Schwellwert t</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="range" id="rg-thresh" min="0" max="20" value="2" oninput="rgThreshChange()">
+          <span class="val-badge" id="rg-thresh-val">2</span>
+        </div>
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">Nachbarschaft</span>
+        <select id="rg-neighbor" onchange="rgRun()">
+          <option value="4">4er-Nachbarschaft</option>
+          <option value="8" selected>8er-Nachbarschaft</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">Aktionen</span>
+        <div style="display:flex;gap:8px">
+          <button class="primary" onclick="rgStep()">▶ Schritt</button>
+          <button class="primary" onclick="rgRunAuto()">⏩ Autoplay</button>
+          <button class="secondary" onclick="rgReset()">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">Eingabegrid (Grauwerte)</div>
+      <div class="grid-wrap"><table class="pgrid" id="rg-input-table"></table></div>
+      <div class="legend-row">
+        <div class="leg"><div class="leg-dot" style="background:#1a6fbf"></div>Blauer Seed</div>
+        <div class="leg"><div class="leg-dot" style="background:#c47a00"></div>Gelber Seed</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Region Growing Ergebnis</div>
+      <div class="grid-wrap"><table class="pgrid" id="rg-output-table"></table></div>
+      <div class="legend-row">
+        <div class="leg"><div class="leg-dot" style="background:#2255a0"></div>Blaue Region</div>
+        <div class="leg"><div class="leg-dot" style="background:#8b5e00"></div>Gelbe Region</div>
+        <div class="leg"><div class="leg-dot" style="background:#111827"></div>Nicht zugewiesen</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Fortschritt & Erklärung</div>
+    <div class="step-box" id="rg-stepbox">Wähle ein Beispiel und starte mit ▶ Schritt oder ⏩ Autoplay.</div>
+    <div class="stats-row">
+      <div class="stat-chip"><div class="sv" id="rg-blue-count">0</div><div class="sl">Blaue Pixel</div></div>
+      <div class="stat-chip"><div class="sv" id="rg-yellow-count">0</div><div class="sl">Gelbe Pixel</div></div>
+      <div class="stat-chip"><div class="sv" id="rg-step-count">0</div><div class="sl">Schritte</div></div>
+      <div class="stat-chip"><div class="sv" id="rg-unassigned">0</div><div class="sl">Nicht zugewiesen</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Erklärung des Algorithmus</div>
+    <div class="algo-card"><b>Initialisierung:</b> Starte mit dem Saatkorn-Pixel. Füge es zur Region hinzu.</div>
+    <div class="algo-card"><b>Bedingung:</b> Ein Nachbarpixel wird akzeptiert, wenn |Grauwert(Pixel) − Saatkornwert| ≤ t.</div>
+    <div class="algo-card"><b>Wachstum (BFS):</b> Alle akzeptierten Nachbarn kommen in eine Queue und werden von dort weiter expandiert.</div>
+    <div class="algo-card"><b>Abbruch:</b> Das Verfahren endet, wenn die Queue leer ist (keine neuen Pixel mehr akzeptiert werden).</div>
+    <div class="algo-card"><b>4er vs 8er:</b> Bei 4er-Nachbarschaft werden nur oben/unten/links/rechts betrachtet. Bei 8er auch die Diagonalen → größere Regionen möglich.</div>
+  </div>
+</div>
+
+<!-- ============================  TAB 2: LABELING  ============================ -->
+<div id="tab-lb" class="section">
+  <div class="section-header">
+    <h1>Labeling-Algorithmus (Connected Components)</h1>
+    <p>Bestimme alle Zusammenhangskomponenten eines Binärbildes. Phase 1 vergibt vorläufige Labels und sammelt Äquivalenzen. Phase 2 ersetzt alle Labels durch den kleinsten Äquivalenzvertreter.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Einstellungen</div>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <span class="ctrl-label">Beispiel</span>
+        <div class="example-tabs" id="lb-examples"></div>
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">Nachbarschaft</span>
+        <select id="lb-neighbor" onchange="lbReset()">
+          <option value="4" selected>4er-Nachbarschaft</option>
+          <option value="8">8er-Nachbarschaft</option>
+        </select>
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <button class="primary" onclick="lbStep()">▶ Schritt</button>
+      <button class="primary" onclick="lbRunAuto()">⏩ Phase 1 komplett</button>
+      <button class="primary" onclick="lbPhase2()">✔ Phase 2 anwenden</button>
+      <button class="secondary" onclick="lbReset()">↺ Reset</button>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">Eingabe (Binärbild)</div>
+      <div class="grid-wrap"><table class="pgrid" id="lb-input-table"></table></div>
+      <div class="legend-row">
+        <div class="leg"><div class="leg-dot" style="background:#e8eaf2"></div>Vordergrund (1)</div>
+        <div class="leg"><div class="leg-dot" style="background:#111827"></div>Hintergrund (0)</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title" id="lb-result-title">Labelmatrix (Phase 1)</div>
+      <div class="grid-wrap"><table class="pgrid" id="lb-output-table"></table></div>
+      <div id="lb-phase-badge" class="phase-badge p1">Phase 1 — vorläufige Labels</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Äquivalenztabelle</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">Labels, die zur selben Komponente gehören (müssen in Phase 2 zusammengeführt werden):</div>
+    <div class="equiv-list" id="lb-equiv-list"><span style="color:var(--text3);font-size:13px">— noch keine Äquivalenzen gefunden —</span></div>
+    <div class="step-box" id="lb-stepbox" style="margin-top:12px">Wähle ein Beispiel und starte mit ▶ Schritt.</div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Algorithmus</div>
+    <div class="algo-card"><b>Phase 1 — Zeilenscan (links→rechts, oben→unten):</b> Für jeden Vordergrundpixel: Betrachte Nachbarn (die bereits besucht wurden). Haben alle kein Label → vergib neues Label. Hat genau ein Nachbar ein Label → übernimm es. Haben mehrere Nachbarn verschiedene Labels → übernimm das kleinste, notiere Äquivalenz.</div>
+    <div class="algo-card"><b>Äquivalenz-Auflösung (Union-Find):</b> Alle äquivalenten Labels werden in Gruppen zusammengefasst. Das kleinste Label der Gruppe wird als Repräsentant gewählt.</div>
+    <div class="algo-card"><b>Phase 2 — Neuscannen:</b> Ersetze jedes vorläufige Label durch den Repräsentanten seiner Äquivalenzklasse.</div>
+    <div class="algo-card"><b>Ergebnis:</b> Jede Zusammenhangskomponente hat eine eindeutige Label-Nummer.</div>
+  </div>
+</div>
+
+<!-- ============================  TAB 3: WATERSHED  ============================ -->
+<div id="tab-ws" class="section">
+  <div class="section-header">
+    <h1>Wasserscheiden-Segmentierung</h1>
+    <p>Das Bild wird als Topographie betrachtet. „Wasser" füllt die Täler von unten nach oben. Treffen zwei Wassermassen aufeinander, entsteht eine Wasserscheide (Segmentgrenze).</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Einstellungen</div>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <span class="ctrl-label">Beispiel</span>
+        <div class="example-tabs" id="ws-examples"></div>
+      </div>
+    </div>
+    <div class="ctrl-row">
+      <div class="ctrl-group">
+        <span class="ctrl-label">Füllhöhe h</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <input type="range" id="ws-h" min="0" max="255" value="0" oninput="wsUpdate()">
+          <span class="val-badge" id="ws-h-val">0</span>
+        </div>
+      </div>
+      <div class="ctrl-group">
+        <span class="ctrl-label">Aktionen</span>
+        <div style="display:flex;gap:8px">
+          <button class="primary" onclick="wsAnimate()">⏩ Animieren</button>
+          <button class="secondary" onclick="wsReset()">↺ Reset</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-title">Höhenprofil (1D) & Füllstand</div>
+      <canvas id="ws-profile" width="460" height="200" style="border-radius:6px;width:100%;"></canvas>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Segmentiertes Bild (2D Grid)</div>
+      <div class="grid-wrap"><table class="pgrid" id="ws-grid-table"></table></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Zustand bei h = <span id="ws-h-display">0</span></div>
+    <div class="step-box" id="ws-stepbox">Schiebe den Regler oder klicke Animieren.</div>
+    <div class="stats-row" id="ws-stats-row"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">Algorithmus</div>
+    <div class="algo-card"><b>Schritt 1 — Lokale Minima finden:</b> Jedes lokale Minimum ist ein Startpunkt (Saatkorn) für eine eigene Region.</div>
+    <div class="algo-card"><b>Schritt 2 — Fluten (Flooding):</b> Die Füllhöhe h wird schrittweise von 0 auf 255 erhöht. Bei jedem Level werden alle Pixel mit Intensität ≤ h aktiviert.</div>
+    <div class="algo-card"><b>Schritt 3 — Wasserscheide:</b> Treffen zwei Regionen aufeinander (Pixel, der zu zwei verschiedenen Regionen gehören könnte), wird er als Wasserscheide markiert.</div>
+    <div class="algo-card"><b>Problem:</b> Über-Segmentierung durch Rauschen. Lösung: Marker-basiertes Watershed mit vorgegebenen Saatkörnern.</div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// UTILITIES
+// ============================================================
+function showTab(t) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-'+t).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ============================================================
+//  REGION GROWING DATA
+// ============================================================
+const RG_EXAMPLES = [
+  {
+    name: "Aufgabe (Vorlesung)",
+    grid: [
+      [4,3,3,12,11,11,13,15,14],
+      [13,4,10,8,9,8,7,7,6],
+      [15,5,9,3,4,4,7,5,5],
+      [15,29,28,4,5,4,7,20,22],
+      [14,30,30,6,5,5,6,21,22],
+      [13,29,29,4,6,6,7,20,22],
+      [4,4,4,21,20,20,7,21,5]
+    ],
+    seeds: [{r:1,c:4,color:'blue'},{r:6,c:0,color:'yellow'}],
+    defaultT: 2
+  },
+  {
+    name: "Einfach (kleine Region)",
+    grid: [
+      [10,10,10,50,50,50],
+      [10,12,11,50,48,52],
+      [11,10,10,51,50,49],
+      [50,50,50,10,10,10],
+      [50,48,50,11,10,12],
+      [49,50,51,10,11,10]
+    ],
+    seeds: [{r:0,c:0,color:'blue'},{r:3,c:3,color:'yellow'}],
+    defaultT: 3
+  },
+  {
+    name: "Grauverlauf",
+    grid: [
+      [5,6,7,100,102,105],
+      [6,5,8,101,100,103],
+      [7,8,6,104,102,101],
+      [100,101,100,200,198,201],
+      [99,100,102,199,200,198],
+      [101,100,99,201,200,200]
+    ],
+    seeds: [{r:0,c:0,color:'blue'},{r:3,c:3,color:'yellow'}],
+    defaultT: 5
+  },
+  {
+    name: "Rauschen (t-Test)",
+    grid: [
+      [20,22,18,80,78,82,20,22],
+      [21,19,20,79,81,80,21,20],
+      [18,20,22,81,80,79,19,21],
+      [80,79,81,20,22,18,80,79],
+      [79,81,80,21,19,20,81,80],
+      [81,80,79,20,21,22,79,81]
+    ],
+    seeds: [{r:0,c:0,color:'blue'},{r:3,c:3,color:'yellow'}],
+    defaultT: 4
+  },
+  {
+    name: "Drei Regionen",
+    grid: [
+      [5,5,6,128,130,200,202,201],
+      [4,6,5,129,128,201,200,202],
+      [6,5,4,130,129,202,201,200],
+      [128,129,128,5,6,128,129,130],
+      [130,128,130,6,5,130,128,129],
+      [129,130,129,5,4,129,130,128]
+    ],
+    seeds: [{r:0,c:0,color:'blue'},{r:3,c:3,color:'yellow'}],
+    defaultT: 4
+  }
+];
+
+let rgCurrent = 0, rgQueue = [], rgVisited = [], rgGrid = [], rgSeeds = [], rgStepNum = 0, rgAutoTimer = null;
+
+function rgBuildExampleTabs() {
+  const el = document.getElementById('rg-examples');
+  el.innerHTML = RG_EXAMPLES.map((e,i) => `<div class="ex-tab ${i===0?'active':''}" onclick="rgSelectExample(${i})">${e.name}</div>`).join('');
+}
+
+function rgSelectExample(i) {
+  rgCurrent = i;
+  document.querySelectorAll('#rg-examples .ex-tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  document.getElementById('rg-thresh').value = RG_EXAMPLES[i].defaultT;
+  document.getElementById('rg-thresh-val').textContent = RG_EXAMPLES[i].defaultT;
+  rgReset();
+}
+
+function rgThreshChange() {
+  document.getElementById('rg-thresh-val').textContent = document.getElementById('rg-thresh').value;
+  rgReset();
+}
+
+function rgReset() {
+  if(rgAutoTimer) clearInterval(rgAutoTimer);
+  const ex = RG_EXAMPLES[rgCurrent];
+  rgGrid = ex.grid;
+  rgSeeds = ex.seeds;
+  rgQueue = [];
+  rgVisited = Array.from({length:rgGrid.length}, ()=>Array(rgGrid[0].length).fill(null));
+  rgStepNum = 0;
+  // init seeds
+  ex.seeds.forEach(s => {
+    rgVisited[s.r][s.c] = s.color;
+    rgQueue.push({r:s.r,c:s.c,color:s.color});
+  });
+  rgRenderInput();
+  rgRenderOutput();
+  rgUpdateStats();
+  document.getElementById('rg-stepbox').innerHTML = `<strong>Reset.</strong> Seeds: ${ex.seeds.map(s=>`(${s.r},${s.c})=${rgGrid[s.r][s.c]}`).join(', ')} | t=${document.getElementById('rg-thresh').value} | ${document.getElementById('rg-neighbor').value}er-Nachbarschaft`;
+}
+
+function rgGetNeighbors(r,c,n) {
+  const d4 = [[0,1],[0,-1],[1,0],[-1,0]];
+  const d8 = [...d4,[-1,-1],[-1,1],[1,-1],[1,1]];
+  const dirs = n==='8' ? d8 : d4;
+  return dirs.map(([dr,dc])=>[r+dr,c+dc]).filter(([nr,nc])=>nr>=0&&nr<rgGrid.length&&nc>=0&&nc<rgGrid[0].length);
+}
+
+function rgStep() {
+  if(rgQueue.length === 0) {
+    document.getElementById('rg-stepbox').innerHTML = `<strong>Fertig!</strong> Queue ist leer. Kein weiteres Wachstum möglich.`;
+    return;
+  }
+  const t = parseInt(document.getElementById('rg-thresh').value);
+  const n = document.getElementById('rg-neighbor').value;
+  const {r,c,color} = rgQueue.shift();
+  const seedVal = rgGrid[rgSeeds.find(s=>s.color===color).r][rgSeeds.find(s=>s.color===color).c];
+  let added = [];
+  rgGetNeighbors(r,c,n).forEach(([nr,nc])=>{
+    if(rgVisited[nr][nc] !== null) return;
+    if(Math.abs(rgGrid[nr][nc]-seedVal)<=t) {
+      rgVisited[nr][nc]=color;
+      rgQueue.push({r:nr,c:nc,color});
+      added.push(`(${nr},${nc})=${rgGrid[nr][nc]}`);
+    }
+  });
+  rgStepNum++;
+  rgRenderOutput();
+  rgUpdateStats();
+  const diff = added.length>0 ? `Neue Pixel: <span class="tag">${added.join(', ')}</span>` : `Keine neuen Pixel (alle Nachbarn schon besucht oder außerhalb t).`;
+  document.getElementById('rg-stepbox').innerHTML = `<strong>Schritt ${rgStepNum}:</strong> Expandiere <span class="tag">(${r},${c})=${rgGrid[r][c]}</span> [${color}] → Saatkornwert ${seedVal}, t=${t}. ${diff}`;
+}
+
+function rgRunAuto() {
+  if(rgAutoTimer) clearInterval(rgAutoTimer);
+  rgAutoTimer = setInterval(()=>{
+    if(rgQueue.length===0){clearInterval(rgAutoTimer);return;}
+    rgStep();
+  },80);
+}
+
+function rgRun() { rgReset(); }
+
+function rgRenderInput() {
+  const ex = RG_EXAMPLES[rgCurrent];
+  const tbl = document.getElementById('rg-input-table');
+  tbl.innerHTML = '';
+  ex.grid.forEach((row,r)=>{
+    const tr = document.createElement('tr');
+    row.forEach((val,c)=>{
+      const td = document.createElement('td');
+      td.textContent = val;
+      const isSeed = ex.seeds.find(s=>s.r===r&&s.c===c);
+      if(isSeed) td.className = isSeed.color==='blue'?'pix-seed-blue':'pix-seed-yellow';
+      tr.appendChild(td);
+    });
+    tbl.appendChild(tr);
+  });
+}
+
+function rgRenderOutput() {
+  const ex = RG_EXAMPLES[rgCurrent];
+  const tbl = document.getElementById('rg-output-table');
+  tbl.innerHTML = '';
+  rgVisited.forEach((row,r)=>{
+    const tr = document.createElement('tr');
+    row.forEach((val,c)=>{
+      const td = document.createElement('td');
+      td.textContent = ex.grid[r][c];
+      const isSeed = ex.seeds.find(s=>s.r===r&&s.c===c);
+      if(isSeed&&isSeed.color==='blue') td.className='pix-seed-blue';
+      else if(isSeed&&isSeed.color==='yellow') td.className='pix-seed-yellow';
+      else if(val==='blue') td.className='pix-blue';
+      else if(val==='yellow') td.className='pix-yellow';
+      else td.className='pix-bg';
+      tr.appendChild(td);
+    });
+    tbl.appendChild(tr);
+  });
+}
+
+function rgUpdateStats() {
+  let b=0,y=0,u=0;
+  rgVisited.forEach(row=>row.forEach(v=>{if(v==='blue')b++;else if(v==='yellow')y++;else u++;}));
+  document.getElementById('rg-blue-count').textContent=b;
+  document.getElementById('rg-yellow-count').textContent=y;
+  document.getElementById('rg-unassigned').textContent=u;
+  document.getElementById('rg-step-count').textContent=rgStepNum;
+}
+
+// ============================================================
+//  LABELING DATA
+// ============================================================
+const LB_EXAMPLES = [
+  {
+    name: "Aufgabe (Übung)",
+    grid: [
+      [0,1,1,1,1,0,0,1,1,1],
+      [0,1,1,1,0,0,1,1,1,1],
+      [1,1,1,1,0,1,0,1,0,1],
+      [0,0,1,1,0,0,1,1,1,1],
+      [1,1,1,1,1,0,0,0,0,1],
+      [0,0,0,0,0,0,0,0,1,0],
+      [0,1,0,0,1,1,0,1,1,1],
+      [0,0,0,0,0,1,1,1,0,0]
+    ]
+  },
+  {
+    name: "Einfach (2 Objekte)",
+    grid: [
+      [0,0,0,0,0,0,0,0],
+      [0,1,1,0,0,1,1,0],
+      [0,1,1,0,0,1,1,0],
+      [0,0,0,0,0,0,0,0],
+      [0,1,1,1,1,0,0,0],
+      [0,1,1,1,1,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0]
+    ]
+  },
+  {
+    name: "L-Form + Punkt",
+    grid: [
+      [0,0,0,0,0,0,0,0],
+      [0,1,0,0,0,0,0,0],
+      [0,1,0,0,1,1,1,0],
+      [0,1,0,0,1,0,0,0],
+      [0,1,1,0,1,0,0,0],
+      [0,0,0,0,0,0,0,0],
+      [0,0,0,1,0,0,0,0],
+      [0,0,0,0,0,0,0,0]
+    ]
+  },
+  {
+    name: "Diagonale Ambiguität",
+    grid: [
+      [1,0,0,0,1,0,0],
+      [0,1,0,1,0,0,0],
+      [0,0,1,0,0,0,0],
+      [0,1,0,1,0,0,0],
+      [1,0,0,0,1,0,0],
+      [0,0,0,0,0,0,0],
+      [0,0,1,1,1,0,0]
+    ]
+  },
+  {
+    name: "Viele Komponenten",
+    grid: [
+      [1,0,1,0,1,0,1],
+      [0,0,0,0,0,0,0],
+      [1,0,1,0,1,0,1],
+      [0,0,0,0,0,0,0],
+      [1,0,1,0,1,0,1],
+      [0,1,0,1,0,1,0],
+      [1,0,1,0,1,0,1]
+    ]
+  }
+];
+
+let lbCurrent=0, lbLabels=[], lbEquiv={}, lbNextLabel=1, lbRow=0, lbCol=0, lbPhase=1, lbDone=false, lbAutoTimer=null;
+const LABEL_COLORS = ['lbl-0','lbl-1','lbl-2','lbl-3','lbl-4','lbl-5','lbl-6','lbl-7','lbl-8'];
+
+function lbBuildExampleTabs() {
+  const el = document.getElementById('lb-examples');
+  el.innerHTML = LB_EXAMPLES.map((e,i)=>`<div class="ex-tab ${i===0?'active':''}" onclick="lbSelectExample(${i})">${e.name}</div>`).join('');
+}
+
+function lbSelectExample(i) {
+  lbCurrent=i;
+  document.querySelectorAll('#lb-examples .ex-tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  lbReset();
+}
+
+function lbReset() {
+  if(lbAutoTimer) clearInterval(lbAutoTimer);
+  const ex = LB_EXAMPLES[lbCurrent];
+  lbLabels = Array.from({length:ex.grid.length},()=>Array(ex.grid[0].length).fill(0));
+  lbEquiv = {};
+  lbNextLabel = 1;
+  lbRow = 0; lbCol = 0;
+  lbPhase = 1; lbDone = false;
+  lbRenderInput();
+  lbRenderOutput();
+  document.getElementById('lb-equiv-list').innerHTML = '<span style="color:var(--text3);font-size:13px">— noch keine Äquivalenzen gefunden —</span>';
+  document.getElementById('lb-stepbox').textContent = 'Wähle ein Beispiel und starte mit ▶ Schritt.';
+  document.getElementById('lb-result-title').textContent = 'Labelmatrix (Phase 1)';
+  document.getElementById('lb-phase-badge').className = 'phase-badge p1';
+  document.getElementById('lb-phase-badge').textContent = 'Phase 1 — vorläufige Labels';
+}
+
+function lbFind(x) {
+  if(!lbEquiv[x]) return x;
+  let root = x;
+  while(lbEquiv[root] && lbEquiv[root]!==root) root=lbEquiv[root];
+  return root;
+}
+function lbUnion(a,b) {
+  const ra=lbFind(a), rb=lbFind(b);
+  if(ra===rb) return;
+  const mn=Math.min(ra,rb), mx=Math.max(ra,rb);
+  lbEquiv[mx]=mn;
+}
+
+function lbStep() {
+  if(lbDone) { document.getElementById('lb-stepbox').innerHTML='<strong>Fertig!</strong> Phase 2 abgeschlossen.'; return; }
+  if(lbPhase===2) { lbApplyPhase2(); return; }
+  const ex = LB_EXAMPLES[lbCurrent];
+  const grid = ex.grid;
+  const n = document.getElementById('lb-neighbor').value;
+  while(lbRow < grid.length) {
+    const r=lbRow, c=lbCol;
+    lbCol++;
+    if(lbCol>=grid[0].length){lbCol=0;lbRow++;}
+    if(grid[r][c]===0) {
+      document.getElementById('lb-stepbox').innerHTML=`<strong>(${r},${c})</strong>: Hintergrund → kein Label.`;
+      lbRenderOutput(r,c);
+      return;
+    }
+    // get valid neighbors already visited (4er: oben, links; 8er: oben-links, oben, oben-rechts, links)
+    const prevN4 = [[-1,0],[0,-1]];
+    const prevN8 = [[-1,-1],[-1,0],[-1,1],[0,-1]];
+    const dirs = n==='8' ? prevN8 : prevN4;
+    const neighborLabels = dirs.map(([dr,dc])=>[r+dr,c+dc])
+      .filter(([nr,nc])=>nr>=0&&nr<grid.length&&nc>=0&&nc<grid[0].length&&grid[nr][nc]===1)
+      .map(([nr,nc])=>lbLabels[nr][nc])
+      .filter(l=>l>0);
+    const unique = [...new Set(neighborLabels)];
+    let msg='';
+    if(unique.length===0) {
+      lbLabels[r][c]=lbNextLabel;
+      msg=`Keine Nachbarn mit Label → <strong>Neues Label ${lbNextLabel}</strong> vergeben.`;
+      lbNextLabel++;
+    } else {
+      const mn = Math.min(...unique);
+      lbLabels[r][c]=mn;
+      if(unique.length>1) {
+        unique.forEach(u=>{ if(u!==mn) lbUnion(mn,u); });
+        msg=`Nachbar-Labels: [${unique.join(',')}] → Label <strong>${mn}</strong> übernommen, Äquivalenz {${unique.join('↔')}} registriert.`;
+      } else {
+        msg=`Nachbar-Label: [${mn}] → Label <strong>${mn}</strong> übernommen.`;
+      }
+    }
+    lbRenderOutput(r,c);
+    lbRenderEquiv();
+    document.getElementById('lb-stepbox').innerHTML=`<strong>(${r},${c})=1</strong>: ${msg}`;
+    return;
+  }
+  // phase 1 done
+  document.getElementById('lb-stepbox').innerHTML='<strong>Phase 1 abgeschlossen.</strong> Klicke "Phase 2 anwenden" zum Zusammenführen.';
+}
+
+function lbRunAuto() {
+  if(lbAutoTimer) clearInterval(lbAutoTimer);
+  const ex = LB_EXAMPLES[lbCurrent];
+  const total = ex.grid.length * ex.grid[0].length;
+  lbAutoTimer = setInterval(()=>{
+    if(lbRow>=ex.grid.length){clearInterval(lbAutoTimer);return;}
+    lbStep();
+  },60);
+}
+
+function lbPhase2() { lbApplyPhase2(); }
+
+function lbApplyPhase2() {
+  const ex = LB_EXAMPLES[lbCurrent];
+  for(let r=0;r<lbLabels.length;r++)
+    for(let c=0;c<lbLabels[r].length;c++)
+      if(lbLabels[r][c]>0) lbLabels[r][c]=lbFind(lbLabels[r][c]);
+  lbPhase=2; lbDone=true;
+  lbRenderOutput();
+  document.getElementById('lb-result-title').textContent='Labelmatrix (Phase 2 — final)';
+  document.getElementById('lb-phase-badge').className='phase-badge p2';
+  document.getElementById('lb-phase-badge').textContent='Phase 2 — finale Labels';
+  // count components
+  const labels = new Set();
+  lbLabels.forEach(row=>row.forEach(v=>{if(v>0)labels.add(v);}));
+  document.getElementById('lb-stepbox').innerHTML=`<strong>Phase 2 fertig!</strong> ${labels.size} Zusammenhangskomponente(n) gefunden: Labels [${[...labels].sort((a,b)=>a-b).join(', ')}].`;
+}
+
+function lbRenderInput() {
+  const ex = LB_EXAMPLES[lbCurrent];
+  const tbl = document.getElementById('lb-input-table');
+  tbl.innerHTML='';
+  ex.grid.forEach(row=>{
+    const tr=document.createElement('tr');
+    row.forEach(v=>{
+      const td=document.createElement('td');
+      td.textContent=v;
+      td.className=v?'pix-fg':'pix-bg';
+      tr.appendChild(td);
+    });
+    tbl.appendChild(tr);
+  });
+}
+
+function lbRenderOutput(curR, curC) {
+  const tbl = document.getElementById('lb-output-table');
+  tbl.innerHTML='';
+  lbLabels.forEach((row,r)=>{
+    const tr=document.createElement('tr');
+    row.forEach((v,c)=>{
+      const td=document.createElement('td');
+      td.textContent=v||'·';
+      const cls = v>0 ? (LABEL_COLORS[v%LABEL_COLORS.length]||'lbl-1') : 'lbl-0';
+      td.className=cls;
+      if(r===curR&&c===curC) td.style.outline='2px solid #fff';
+      tr.appendChild(td);
+    });
+    tbl.appendChild(tr);
+  });
+}
+
+function lbRenderEquiv() {
+  const groups = {};
+  Object.entries(lbEquiv).forEach(([k,v])=>{
+    const root=lbFind(parseInt(k));
+    if(!groups[root]) groups[root]=new Set([root]);
+    groups[root].add(parseInt(k));
+  });
+  const chips = Object.values(groups).filter(g=>g.size>1).map(g=>{
+    const arr=[...g].sort((a,b)=>a-b);
+    return `<div class="equiv-chip active">{${arr.join('↔')}}</div>`;
+  });
+  if(chips.length===0) {
+    document.getElementById('lb-equiv-list').innerHTML='<span style="color:var(--text3);font-size:13px">— noch keine Äquivalenzen —</span>';
+  } else {
+    document.getElementById('lb-equiv-list').innerHTML=chips.join('');
+  }
+}
+
+// ============================================================
+//  WATERSHED DATA
+// ============================================================
+const WS_EXAMPLES = [
+  {
+    name: "Vorlesung (3 Täler)",
+    // 1D intensity profile
+    profile: [200,180,140,90,50,20,40,80,120,60,30,50,100,150,110,80,40,20,30,60,100,140,180,200],
+    // 2D grid (rows x cols) of intensities
+    grid: [
+      [200,190,150,100,60,30,50,90,140,200],
+      [195,170,120,80,40,15,35,70,110,180],
+      [180,150,100,60,25,10,25,55,90,160],
+      [195,170,120,80,40,15,35,70,110,180],
+      [200,190,150,100,60,30,50,90,140,200]
+    ]
+  },
+  {
+    name: "Zwei Täler",
+    profile: [180,140,90,40,15,30,80,130,90,40,15,30,80,130,180],
+    grid: [
+      [180,140,90,40,15,30,80,130,180],
+      [160,110,70,25,10,20,65,110,160],
+      [180,140,90,40,15,30,80,130,180],
+      [160,110,70,25,10,20,65,110,160],
+      [180,140,90,40,15,30,80,130,180]
+    ]
+  },
+  {
+    name: "Flaches Tal",
+    profile: [200,180,150,100,50,5,5,5,50,100,150,180,200,180,150,100,50,5,5,5,50,100,150,180,200],
+    grid: [
+      [200,180,130,80,30,5,5,30,80,130,180,200],
+      [180,150,100,50,10,5,5,10,50,100,150,180],
+      [200,180,130,80,30,5,5,30,80,130,180,200],
+      [180,150,100,50,10,5,5,10,50,100,150,180],
+      [200,180,130,80,30,5,5,30,80,130,180,200]
+    ]
+  },
+  {
+    name: "Rauschen",
+    profile: [180,160,120,80,45,20,35,18,40,55,25,40,70,100,130,80,50,20,15,25,60,100,140,180],
+    grid: [
+      [180,140,90,45,20,35,18,40,25,40,70,140,180],
+      [160,120,75,35,15,25,12,30,18,30,55,120,160],
+      [180,140,90,45,20,35,18,40,25,40,70,140,180],
+      [160,120,75,35,15,25,12,30,18,30,55,120,160],
+      [180,140,90,45,20,35,18,40,25,40,70,140,180]
+    ]
+  },
+  {
+    name: "Breites Gebirge",
+    profile: [10,15,30,60,100,150,200,150,100,60,30,15,10,15,30,60,100,150,200,150,100,60,30,15,10],
+    grid: [
+      [10,20,60,120,200,120,60,20,10,20,60,120,200],
+      [10,15,50,110,190,110,50,15,10,15,50,110,190],
+      [10,20,60,120,200,120,60,20,10,20,60,120,200],
+      [10,15,50,110,190,110,50,15,10,15,50,110,190],
+      [10,20,60,120,200,120,60,20,10,20,60,120,200]
+    ]
+  }
+];
+
+let wsCurrent=0, wsH=0, wsAnimTimer=null;
+const WS_COLORS = ['#e05060','#e0a020','#6040c0','#20a080','#c05080','#4080c0'];
+
+function wsBuildExampleTabs() {
+  const el=document.getElementById('ws-examples');
+  el.innerHTML=WS_EXAMPLES.map((e,i)=>`<div class="ex-tab ${i===0?'active':''}" onclick="wsSelectExample(${i})">${e.name}</div>`).join('');
+}
+
+function wsSelectExample(i) {
+  wsCurrent=i;
+  document.querySelectorAll('#ws-examples .ex-tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  wsReset();
+}
+
+function wsReset() {
+  if(wsAnimTimer) clearInterval(wsAnimTimer);
+  wsH=0;
+  document.getElementById('ws-h').value=0;
+  document.getElementById('ws-h-val').textContent=0;
+  wsUpdate();
+}
+
+function wsGetLocalMinima(profile) {
+  const mins=[];
+  for(let i=0;i<profile.length;i++) {
+    const l=i>0?profile[i-1]:Infinity;
+    const r2=i<profile.length-1?profile[i+1]:Infinity;
+    if(profile[i]<=l&&profile[i]<=r2) mins.push(i);
+  }
+  // dedupe flat minima
+  const merged=[];
+  for(let m of mins) {
+    if(merged.length===0||m>merged[merged.length-1]+2) merged.push(m);
+  }
+  return merged;
+}
+
+function wsComputeRegions(profile, h) {
+  // assign each position to nearest local min reachable below h, or WALL
+  const mins = wsGetLocalMinima(profile);
+  const regions = new Array(profile.length).fill(-1); // -1=not flooded, -2=watershed
+  // flood from each minimum up to h
+  for(let m=0;m<mins.length;m++) {
+    // BFS left and right from min
+    const start=mins[m];
+    if(profile[start]>h) continue;
+    const stack=[start];
+    while(stack.length>0) {
+      const pos=stack.pop();
+      if(regions[pos]===-2) continue; // already wall
+      if(regions[pos]>=0 && regions[pos]!==m) { regions[pos]=-2; continue; }
+      regions[pos]=m;
+      if(pos>0&&profile[pos-1]<=h&&regions[pos-1]===-1) stack.push(pos-1);
+      if(pos<profile.length-1&&profile[pos+1]<=h&&regions[pos+1]===-1) stack.push(pos+1);
+    }
+  }
+  return {regions, mins};
+}
+
+function wsUpdate() {
+  wsH=parseInt(document.getElementById('ws-h').value);
+  document.getElementById('ws-h-val').textContent=wsH;
+  document.getElementById('ws-h-display').textContent=wsH;
+  const ex=WS_EXAMPLES[wsCurrent];
+  wsDrawProfile(ex.profile, wsH);
+  wsDrawGrid(ex.grid, ex.profile, wsH);
+  const {regions, mins} = wsComputeRegions(ex.profile, wsH);
+  const activeRegions = new Set(regions.filter(r=>r>=0));
+  const walls = regions.filter(r=>r===-2).length;
+  let statsHTML='';
+  activeRegions.forEach(r=>{
+    const cnt=regions.filter(x=>x===r).length;
+    statsHTML+=`<div class="stat-chip"><div class="sv" style="color:${WS_COLORS[r%WS_COLORS.length]};font-size:15px">Region ${r+1}</div><div class="sl">${cnt} Pixel</div></div>`;
+  });
+  if(walls>0) statsHTML+=`<div class="stat-chip"><div class="sv">${walls}</div><div class="sl">Wasserscheiden-Px</div></div>`;
+  document.getElementById('ws-stats-row').innerHTML=statsHTML||'<span style="color:var(--text3);font-size:13px">h=0: Noch keine Region geflutet.</span>';
+  // stepbox
+  let msg='';
+  if(wsH===0) msg='h=0: Startpunkt. Alle Pixel noch trocken.';
+  else if(activeRegions.size===0) msg=`h=${wsH}: Noch kein Minimum erreicht.`;
+  else if(walls>0) msg=`h=${wsH}: <strong>${activeRegions.size} Regionen</strong> aktiv. ${walls} Wasserscheidenpixel gefunden (Treffen zweier Regionen).`;
+  else msg=`h=${wsH}: <strong>${activeRegions.size} Region(en)</strong> aktiv. Wachsen von den lokalen Minima nach oben.`;
+  document.getElementById('ws-stepbox').innerHTML=msg;
+}
+
+function wsDrawProfile(profile, h) {
+  const canvas=document.getElementById('ws-profile');
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  const pad=30;
+  const maxV=Math.max(...profile);
+  const scaleX=(W-2*pad)/profile.length;
+  const scaleY=(H-2*pad)/maxV;
+  const px=(i)=>pad+i*scaleX;
+  const py=(v)=>H-pad-v*scaleY;
+  const {regions, mins} = wsComputeRegions(profile, h);
+  // fill flooded regions
+  for(let i=0;i<profile.length;i++) {
+    if(regions[i]<0) continue;
+    const fillH=Math.min(h, maxV);
+    const color=WS_COLORS[regions[i]%WS_COLORS.length];
+    ctx.fillStyle=color+'44';
+    ctx.fillRect(px(i),py(fillH),scaleX+1,py(0)-py(fillH)+pad);
+  }
+  // watershed walls
+  for(let i=0;i<profile.length;i++) {
+    if(regions[i]===-2) {
+      ctx.fillStyle='#ffffff44';
+      ctx.fillRect(px(i),py(h),scaleX+1,py(0)-py(h)+pad);
+    }
+  }
+  // profile curve
+  ctx.beginPath();
+  ctx.strokeStyle='#4f8ef7';
+  ctx.lineWidth=2.5;
+  profile.forEach((v,i)=>{ if(i===0)ctx.moveTo(px(i)+scaleX/2,py(v));else ctx.lineTo(px(i)+scaleX/2,py(v)); });
+  ctx.stroke();
+  // water level line
+  if(h>0) {
+    ctx.beginPath();
+    ctx.strokeStyle='#22d9a0';
+    ctx.lineWidth=1.5;
+    ctx.setLineDash([6,3]);
+    ctx.moveTo(pad,py(h)); ctx.lineTo(W-pad,py(h));
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#22d9a0';
+    ctx.font='12px Segoe UI';
+    ctx.fillText('h='+h,W-pad-45,py(h)-5);
+  }
+  // local minima
+  mins.forEach((m,i)=>{
+    ctx.beginPath();
+    ctx.fillStyle=WS_COLORS[i%WS_COLORS.length];
+    ctx.arc(px(m)+scaleX/2,py(profile[m]),5,0,Math.PI*2);
+    ctx.fill();
+  });
+  // axes
+  ctx.strokeStyle='#2e3856';
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(pad,pad); ctx.lineTo(pad,H-pad); ctx.lineTo(W-pad,H-pad);
+  ctx.stroke();
+}
+
+function wsDrawGrid(grid, profile, h) {
+  const {regions} = wsComputeRegions(profile, h);
+  const tbl=document.getElementById('ws-grid-table');
+  tbl.innerHTML='';
+  grid.forEach(row=>{
+    const tr=document.createElement('tr');
+    row.forEach((v,c)=>{
+      const td=document.createElement('td');
+      td.textContent=v;
+      // map grid column to profile index
+      const profIdx=Math.round((c/(row.length-1))*(profile.length-1));
+      const reg=regions[profIdx];
+      if(v<=h) {
+        if(reg===-2) { td.style.background='#444';td.style.color='#fff'; }
+        else if(reg>=0) { td.style.background=WS_COLORS[reg%WS_COLORS.length]+'66';td.style.color=WS_COLORS[reg%WS_COLORS.length]; }
+        else td.style.background='#1a2a3a';
+      }
+      tr.appendChild(td);
+    });
+    tbl.appendChild(tr);
+  });
+}
+
+function wsAnimate() {
+  if(wsAnimTimer) clearInterval(wsAnimTimer);
+  wsH=0;
+  document.getElementById('ws-h').value=0;
+  wsAnimTimer=setInterval(()=>{
+    wsH+=2;
+    if(wsH>255){wsH=255;clearInterval(wsAnimTimer);}
+    document.getElementById('ws-h').value=wsH;
+    wsUpdate();
+  },40);
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+rgBuildExampleTabs();
+rgSelectExample(0);
+lbBuildExampleTabs();
+lbSelectExample(0);
+wsBuildExampleTabs();
+wsSelectExample(0);
+</script>
+</body>
+</html>
