@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chamfer Algorithmus — Lernhilfe</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;background:#f3f3f0;color:#1a2744;min-height:100vh}
+.hdr{background:#1a2744;color:#fff;padding:1rem 2rem;display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap}
+.hdr-t{font-size:1.1rem;font-weight:700}
+.hdr-s{font-size:.74rem;opacity:.55;margin-top:2px}
+.pill{background:#0f6e56;font-size:.65rem;padding:2px 9px;border-radius:999px;font-weight:600}
+.wrap{max-width:1140px;margin:0 auto;padding:1.5rem 1.25rem}
+
+/* mask card */
+.mcard{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;display:flex;gap:1.75rem;align-items:flex-start;flex-wrap:wrap}
+.mblk{display:flex;flex-direction:column;gap:7px;min-width:128px}
+.ml{font-size:.65rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#6b7280}
+.ms{font-size:.63rem;color:#9ca3af;margin-top:-5px}
+.mgrid{display:inline-grid;grid-template-columns:repeat(3,36px);gap:2px}
+.mc{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:5px;font-size:13px;font-weight:700;font-family:monospace}
+.mc-n{background:#dbeafe;color:#1e40af}
+.mc-0{background:#d1fae5;color:#065f46}
+.mc-d{background:#f9fafb;color:#d1d5db;font-size:17px}
+.vdiv{width:1px;background:#e5e7eb;align-self:stretch}
+.af{flex:1;min-width:210px}
+.af-t{font-size:.65rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#6b7280;margin-bottom:9px}
+.af-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:.65rem .85rem;background:#f9fafb;border-radius:8px;border:1px solid #f0f0ee}
+.as{background:#fff;border:1px solid #e5e7eb;padding:3px 10px;border-radius:999px;font-size:.72rem;font-weight:600;color:#374151;white-space:nowrap}
+.aa{color:#c9cdd5}
+.af-info{font-size:.7rem;color:#6b7280;margin-top:.7rem;line-height:2}
+.af-info strong{color:#374151}
+
+/* tabs */
+.tabbar{display:flex;gap:3px;padding:.4rem;background:#fff;border:1px solid #e5e7eb;border-bottom:none;border-radius:12px 12px 0 0;flex-wrap:wrap}
+.tbtn{padding:5px 12px;border-radius:7px;border:none;background:transparent;color:#6b7280;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.tbtn:hover{background:#f3f4f6;color:#1a2744}
+.tbtn.on{background:#1a2744;color:#fff}
+.excard{background:#fff;border:1px solid #e5e7eb;border-radius:0 12px 12px 12px;padding:1.4rem}
+
+/* steps layout */
+.irow{display:flex;gap:1.75rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:flex-start}
+.hdiv{border:none;border-top:1px solid #f0f0ee;margin-bottom:1.25rem}
+.srow{display:flex;gap:8px;align-items:flex-start;overflow-x:auto;padding-bottom:.5rem}
+.sblk{display:flex;flex-direction:column;gap:6px;flex-shrink:0}
+.slbl{font-size:.62rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#6b7280}
+.ssub{font-size:.6rem;color:#9ca3af;margin-top:-4px}
+.sarr{display:flex;flex-direction:column;align-items:center;justify-content:center;padding-top:26px;color:#d1d5db;gap:2px;flex-shrink:0;min-width:44px;font-size:1rem}
+.sarr small{font-size:.57rem;color:#9ca3af;text-align:center;line-height:1.3}
+
+/* CELLS */
+.mgr{display:inline-grid;gap:2px}
+.cell{
+  display:flex;align-items:center;justify-content:center;
+  border-radius:5px;font-size:12px;font-weight:700;font-family:monospace;
+  cursor:pointer;position:relative;   /* ← relative for badge */
+  transition:transform .1s;
+}
+.cell:hover{transform:scale(1.08)}
+
+/* DT colours */
+.c0{background:#bbf7d0;color:#065f46}
+.c1{background:#fef9c3;color:#713f12}
+.c2{background:#fed7aa;color:#7c2d12}
+.c3{background:#fecaca;color:#7f1d1d}
+.c4{background:#fca5a5;color:#450a0a}
+.cinf{background:#e5e7eb;color:#9ca3af}
+.cnil{background:transparent;color:#e0e0e0;border:1px dashed #e5e7eb;font-size:10px;cursor:default}
+.cbest{outline:2.5px solid #059669;outline-offset:-2px}
+.t1{background:#bbf7d0;color:#065f46}
+.t0{background:#f3f4f6;color:#c4c9d4}
+
+/* highlight states */
+.cell.hl-curr{outline:3px solid #2563eb!important;outline-offset:-2px;z-index:10;transform:scale(1.18)}
+.cell.hl-src{outline:2px solid #f59e0b;outline-offset:-1px;z-index:9}
+.cell.hl-min{outline:2.5px solid #059669;outline-offset:-1px;z-index:9}
+
+/* ── COST BADGE — appears ON the neighbour cell ── */
+.cbadge{
+  position:absolute;
+  top:1px;right:2px;
+  font-size:8px;font-weight:800;font-family:monospace;
+  border-radius:3px;
+  padding:0 2px;
+  line-height:1.55;
+  z-index:30;
+  pointer-events:none;
+  letter-spacing:-.02em;
+}
+.cbadge.k1{background:#fef3c7;color:#92400e;border:1px solid #f59e0b}
+.cbadge.k2{background:#fee2e2;color:#991b1b;border:1px solid #f87171}
+
+/* info panel */
+.info-panel{margin-top:1.1rem;background:#1e293b;border-radius:10px;border:1px solid #334155;overflow:hidden}
+.ip-head{background:#1a2744;padding:.42rem 1rem;font-size:.64rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#475569;display:flex;align-items:center;gap:.45rem}
+.ip-dot{width:7px;height:7px;border-radius:50%;background:#334155}
+.ip-dot.on{background:#3b82f6}
+.ip-body{padding:.75rem 1.1rem;font-family:monospace;font-size:.73rem;color:#cbd5e1;line-height:2;min-height:86px}
+.ip-ph{color:#475569;font-style:italic}
+.ip-step{color:#60a5fa;font-weight:700;font-size:.74rem;margin-bottom:.25rem}
+.ip-coord{color:#94a3b8;font-size:.65rem;margin-bottom:.45rem}
+.ip-tbl{border-collapse:collapse;width:100%}
+.ip-tbl td{padding:1px 6px;white-space:nowrap}
+.td-sym{color:#93c5fd;width:90px}
+.td-nv{color:#fde68a;text-align:right;width:28px}
+.td-cost{width:28px}
+.td-cost.k1{color:#fbbf24}
+.td-cost.k2{color:#f87171}
+.td-tot{text-align:right;width:32px;font-weight:600}
+.td-min{color:#6ee7b7}
+.td-cur{color:#475569}
+.ip-res{margin-top:.5rem;padding-top:.4rem;border-top:1px solid #334155;font-weight:700;color:#6ee7b7}
+.ip-match{color:#fbbf24}
+
+.note{margin-top:1rem;padding:.65rem .9rem;background:#f9fafb;border-radius:8px;border:1px solid #f0f0ee;font-size:.72rem;color:#374151;line-height:1.75}
+.leg{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-top:1.1rem;padding-top:1rem;border-top:1px solid #f0f0ee;font-size:.68rem;color:#6b7280}
+.li{display:flex;align-items:center;gap:4px}
+.lsw{width:18px;height:18px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;font-family:monospace}
+.lbadge{font-size:8px;font-weight:800;font-family:monospace;border-radius:3px;padding:0 3px;line-height:1.6}
+</style>
+</head>
+<body>
+<header class="hdr">
+  <div>
+    <div class="hdr-t">Chamfer Algorithmus</div>
+    <div class="hdr-s">Hover über eine Zelle — Maskenkosten (+1 / +2) erscheinen direkt auf den Nachbar-Pixeln</div>
+  </div>
+  <span class="pill">Bildverarbeitung</span>
+</header>
+
+<div class="wrap">
+  <div class="mcard">
+    <div class="mblk">
+      <div class="ml">Maske M<sub>a</sub> — Phase 1</div>
+      <div class="ms">Vorwärts ↘ &nbsp;(oben-links → unten-rechts)</div>
+      <div class="mgrid" id="ma"></div>
+    </div>
+    <div class="vdiv"></div>
+    <div class="mblk">
+      <div class="ml">Maske M<sub>b</sub> — Phase 2</div>
+      <div class="ms">Unten→Oben, Links→Rechts &nbsp;{←+1, ↙+2, ↓+1, ↘+2}</div>
+      <div class="mgrid" id="mb"></div>
+    </div>
+    <div class="vdiv"></div>
+    <div class="af">
+      <div class="af-t">Algorithmus — Schritte</div>
+      <div class="af-row">
+        <span class="as">① Init</span><span class="aa">→</span>
+        <span class="as">② Phase 1 (M<sub>a</sub>)</span><span class="aa">→</span>
+        <span class="as">③ Phase 2 (M<sub>b</sub>)</span><span class="aa">→</span>
+        <span class="as">④ Matching</span>
+      </div>
+      <div class="af-info">
+        <strong>Init:</strong> Vordergrundpixel→0, Rest→∞ &nbsp;|&nbsp; <strong>Kosten:</strong> ↔↕=1, ↗↘=2<br>
+        <strong>Formel:</strong> D[r][c] = min(aktuell, Nachbar + Kosten)<br>
+        <strong>Hover:</strong> Nachbar-Pixel zeigen <span style="display:inline-block;font-size:8px;font-weight:800;font-family:monospace;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;border-radius:3px;padding:0 3px;line-height:1.6;vertical-align:middle">+1</span>
+        oder <span style="display:inline-block;font-size:8px;font-weight:800;font-family:monospace;background:#fee2e2;color:#991b1b;border:1px solid #f87171;border-radius:3px;padding:0 3px;line-height:1.6;vertical-align:middle">+2</span> — die Maskenkosten direkt auf dem Pixel
+      </div>
+    </div>
+  </div>
+
+  <div class="tabbar" id="tabbar"></div>
+  <div class="excard" id="excontent"></div>
+</div>
+
+<script>
+/* ── ALGORITHM ── */
+function chamferDT(A){
+  const R=A.length,C=A[0].length;
+  let D=A.map(r=>r.map(v=>v===1?0:1e9));
+  const init=D.map(r=>[...r]);
+  const ph1D=Array.from({length:R},()=>Array(C));
+  const ph2D=Array.from({length:R},()=>Array(C));
+
+  const MA=[{sym:'↖',dr:-1,dc:-1,k:2},{sym:'↑',dr:-1,dc:0,k:1},{sym:'↗',dr:-1,dc:1,k:2},{sym:'←',dr:0,dc:-1,k:1}];
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const iv=D[r][c],nb=[];
+    for(const{sym,dr,dc,k}of MA){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<R&&nc>=0&&nc<C){const nv=D[nr][nc];nb.push({sym,nr,nc,nv,k,tot:nv+k});}}
+    const best=Math.min(iv,...nb.map(n=>n.tot));
+    D[r][c]=best;ph1D[r][c]={iv,nb,res:best};
+  }
+  const ph1=D.map(r=>[...r]);
+
+  const MB=[{sym:'←',dr:0,dc:-1,k:1},{sym:'↙',dr:1,dc:-1,k:2},{sym:'↓',dr:1,dc:0,k:1},{sym:'↘',dr:1,dc:1,k:2}];
+  for(let r=R-1;r>=0;r--)for(let c=0;c<C;c++){
+    const iv=D[r][c],nb=[];
+    for(const{sym,dr,dc,k}of MB){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<R&&nc>=0&&nc<C){const nv=D[nr][nc];nb.push({sym,nr,nc,nv,k,tot:nv+k});}}
+    const best=Math.min(iv,...nb.map(n=>n.tot));
+    D[r][c]=best;ph2D[r][c]={iv,nb,res:best};
+  }
+  return{init,ph1,ph2:D.map(r=>[...r]),ph1D,ph2D};
+}
+
+function chamferMatch(DT,B){
+  const R=DT.length,C=DT[0].length,TR=B.length,TC=B[0].length;
+  const cr=Math.floor(TR/2),cc=Math.floor(TC/2);
+  const fg=[];
+  for(let r=0;r<TR;r++)for(let c=0;c<TC;c++)if(B[r][c]===1)fg.push([r-cr,c-cc]);
+  return DT.map((row,r)=>row.map((_,c)=>{
+    let s=0;const terms=[];
+    for(const[dr,dc]of fg){
+      const nr=r+dr,nc=c+dc;
+      if(nr<0||nr>=R||nc<0||nc>=C)return null;
+      terms.push({nr,nc,val:DT[nr][nc]});s+=DT[nr][nc];
+    }
+    return{score:s,terms};
+  }));
+}
+
+/* ── EXAMPLES ── */
+const EX=[
+  {nm:'① Kreuz',title:'Kreuz-Template (Übungsaufgabe)',sub:'6×6 | Kreuz 3×3',
+   A:[[0,0,0,0,1,0],[0,1,0,1,1,1],[0,0,1,0,1,0],[0,1,0,0,1,0],[1,1,1,0,0,0],[0,1,0,1,0,1]],
+   B:[[0,1,0],[1,1,1],[0,1,0]],Bn:'Kreuz 3×3',
+   note:'Score(r,c) = DT[r−1][c]+DT[r][c−1]+DT[r][c]+DT[r][c+1]+DT[r+1][c]. Score 0 = perfekter Match.'},
+  {nm:'② Linie [1 1 1]',title:'Horizontale Linie',sub:'5×6 | Template [1 1 1]',
+   A:[[0,0,0,0,0,0],[1,1,1,0,0,0],[0,0,0,0,0,0],[0,0,0,1,1,1],[0,0,0,0,0,0]],
+   B:[[1,1,1]],Bn:'[1 1 1]',
+   note:'Score = DT[r][c−1]+DT[r][c]+DT[r][c+1]. Perfekter Match wo alle 3 nebeneinanderliegenden Pixel Vordergrund sind.'},
+  {nm:'③ Lücke [1 0 1]',title:'Lückenmuster [1 0 1]',sub:'4×5 | Template [1 0 1]',
+   A:[[0,0,0,0,0],[1,0,1,0,0],[0,0,0,0,0],[0,1,0,1,0]],
+   B:[[1,0,1]],Bn:'[1 0 1]',
+   note:'Mittlerer Pixel (0) zählt NICHT! Score = DT[r][c−1]+DT[r][c+1]. Nur die 2 äußeren Pixel werden summiert.'},
+  {nm:'④ L-Form',title:'L-förmiges Template',sub:'5×6 | L-Form 3×3',
+   A:[[0,0,0,0,0,0],[0,1,0,0,0,0],[0,1,1,0,0,0],[0,0,0,0,1,0],[0,0,0,0,1,1]],
+   B:[[0,0,0],[1,0,0],[1,1,0]],Bn:'L-Form 3×3',
+   note:'Vordergrundpixel: ← (0,−1), ↙ (+1,−1), ↓ (+1,0) relativ zur Mitte. Score = Summe dieser 3 DT-Werte.'},
+  {nm:'⑤ Diagonal',title:'Diagonales Template',sub:'6×6 | Diagonale 3×3',
+   A:[[0,0,0,0,0,0],[0,1,0,0,0,0],[0,0,1,0,0,0],[0,0,0,1,0,0],[0,0,0,0,1,0],[0,0,0,0,0,0]],
+   B:[[1,0,0],[0,1,0],[0,0,1]],Bn:'Diagonale 3×3',
+   note:'Score = DT[r−1][c−1]+DT[r][c]+DT[r+1][c+1]. Mehrere perfekte Matches entstehen, da die Diagonale länger als das 3×3 Template ist.'}
+];
+
+/* ── RENDER ── */
+const CS=34;
+let curEX=0;
+const cellMap=new Map();
+const activeBadges=[];   // track all badges for cleanup
+
+function fv(v){return v>=1e8?'∞':String(v)}
+function dc(v){if(v>=1e8)return'cinf';if(v===0)return'c0';if(v===1)return'c1';if(v===2)return'c2';if(v===3)return'c3';return'c4';}
+
+function makeCell(v,cls,id,ev){
+  const d=document.createElement('div');
+  d.className='cell '+cls;
+  d.style.cssText=`width:${CS}px;height:${CS}px`;
+  d.textContent=fv(v);
+  if(id)d.id=id;
+  if(ev){cellMap.set(d,ev);d.addEventListener('mouseenter',onEnter);d.addEventListener('mouseleave',onLeave);}
+  return d;
+}
+
+function makeGrid(data,step,xi,det,minM){
+  const R=data.length,C=data[0].length;
+  const g=document.createElement('div');
+  g.className='mgr';
+  g.style.gridTemplateColumns=`repeat(${C},${CS}px)`;
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){
+    const raw=data[r][c];
+    const isNull=raw===null;
+    const v=(!isNull&&typeof raw==='object')?raw.score:raw;
+    let cls,id,ev;
+    if(step==='bin'||step==='tpl'){cls=v===1?'t1':'t0';id=null;ev=null;}
+    else if(isNull){cls='cnil';id=`x${xi}-${step}-${r}-${c}`;ev=null;}
+    else if(step==='match'){cls=dc(v)+(v===minM?' cbest':'');id=`x${xi}-${step}-${r}-${c}`;ev={step,r,c,xi,d:raw};}
+    else{cls=dc(v);id=`x${xi}-${step}-${r}-${c}`;ev=det?{step,r,c,xi,d:det[r][c]}:null;}
+    g.appendChild(makeCell(v,cls,id,ev));
+  }
+  return g;
+}
+
+function makeSBlock(lbl,sub,grid){
+  const b=document.createElement('div');b.className='sblk';
+  const l=document.createElement('div');l.className='slbl';l.textContent=lbl;
+  const s=document.createElement('div');s.className='ssub';s.textContent=sub;
+  b.appendChild(l);b.appendChild(s);b.appendChild(grid);return b;
+}
+function makeArr(t,b){
+  const d=document.createElement('div');d.className='sarr';
+  d.innerHTML=`<span>→</span><small>${t}<br>${b}</small>`;return d;
+}
+
+/* ── HIGHLIGHT + BADGE ── */
+function clearAll(){
+  document.querySelectorAll('.hl-curr,.hl-src,.hl-min').forEach(el=>el.classList.remove('hl-curr','hl-src','hl-min'));
+  activeBadges.forEach(b=>b.remove());
+  activeBadges.length=0;
+}
+
+function hlCell(id,cls){const el=document.getElementById(id);if(el)el.classList.add(cls);}
+
+/* Place a small cost badge (+1 or +2) on a neighbour cell */
+function addBadge(id,cost){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const b=document.createElement('span');
+  b.className=`cbadge k${cost}`;
+  b.textContent='+'+cost;
+  el.appendChild(b);
+  activeBadges.push(b);
+}
+
+/* ── EVENT HANDLERS ── */
+function onEnter(e){
+  clearAll();
+  const cell=e.currentTarget;
+  cell.classList.add('hl-curr');
+  const ev=cellMap.get(cell);
+  if(!ev)return;
+  const{step,r,c,xi,d}=ev;
+  const panel=document.getElementById(`ip-${xi}`);
+  if(!panel)return;
+
+  let html='';
+
+  if(step==='ph1'||step==='ph2'){
+    const{iv,nb,res}=d;
+    const sname=step==='ph1'?'② Phase 1 (Maske Mₐ) — Vorwärts ↘':'③ Phase 2 (Maske M_b) — Unten→Oben L→R';
+    html+=`<div class="ip-step">${sname}</div>`;
+    html+=`<div class="ip-coord">Zeile ${r+1}, Spalte ${c+1} &nbsp;|&nbsp; D[r][c] = min( aktuell, Nachbar+Kosten )</div>`;
+    html+=`<table class="ip-tbl">`;
+
+    // current cell source
+    const srcStep=step==='ph1'?'init':'ph1';
+    hlCell(`x${xi}-${srcStep}-${r}-${c}`, iv===res?'hl-min':'hl-src');
+    html+=`<tr><td class="td-sym">Aktuell (Phase ${step==='ph1'?'0→1':'1→2'})</td><td class="td-nv">${fv(iv)}</td><td class="td-cost"></td><td class="td-tot ${iv===res?'td-min':'td-cur'}">${fv(iv)}${iv===res?' ✓':''}</td></tr>`;
+
+    for(const n of nb){
+      const isMin=n.tot===res&&n.tot<iv;
+      const srcId=`x${xi}-${step}-${n.nr}-${n.nc}`;
+      hlCell(srcId, isMin?'hl-min':'hl-src');
+      addBadge(srcId, n.k);   /* ← BADGE ON THE PIXEL */
+      html+=`<tr>
+        <td class="td-sym">${n.sym} [Z${n.nr+1},S${n.nc+1}]</td>
+        <td class="td-nv">${fv(n.nv)}</td>
+        <td class="td-cost k${n.k}">+${n.k}</td>
+        <td class="td-tot ${isMin?'td-min':'td-cur'}">${fv(n.tot)}${isMin?' ✓':''}</td>
+      </tr>`;
+    }
+    html+=`</table>`;
+    const allTots=[iv,...nb.map(n=>n.tot)];
+    html+=`<div class="ip-res">→ min(${allTots.map(fv).join(', ')}) = <strong>${fv(res)}</strong></div>`;
+
+  } else if(step==='match'){
+    const{score,terms}=d;
+    html+=`<div class="ip-step">④ Chamfer Matching</div>`;
+    html+=`<div class="ip-coord">Zentrum Zeile ${r+1}, Sp. ${c+1} &nbsp;|&nbsp; Score = Summe der DT-Werte an Template-Vordergrundpixeln</div>`;
+    html+=`<table class="ip-tbl">`;
+    const parts=[];
+    for(const t of terms){
+      hlCell(`x${xi}-ph2-${t.nr}-${t.nc}`,'hl-src');
+      html+=`<tr><td class="td-sym">DT[Z${t.nr+1}][S${t.nc+1}]</td><td class="td-nv"></td><td class="td-cost"></td><td class="td-tot ${t.val===0?'td-min':'td-cur'}">${fv(t.val)}</td></tr>`;
+      parts.push(fv(t.val));
+    }
+    html+=`</table>`;
+    if(score===0)html+=`<div class="ip-res ip-match">🎯 ${parts.join(' + ')} = 0 — Perfekter Match!</div>`;
+    else html+=`<div class="ip-res">${parts.join(' + ')} = <strong>${fv(score)}</strong></div>`;
+  }
+
+  panel.innerHTML=html;
+}
+
+function onLeave(){/* keep info visible — cleared on next hover */}
+
+/* ── RENDER EXAMPLE ── */
+function renderEx(ex,xi){
+  const{init,ph1,ph2,ph1D,ph2D}=chamferDT(ex.A);
+  const mRaw=chamferMatch(ph2,ex.B);
+  let minM=1e9;
+  mRaw.forEach(r=>r.forEach(v=>{if(v&&v.score<minM)minM=v.score;}));
+
+  const root=document.createElement('div');
+
+  // header
+  const hd=document.createElement('div');hd.style.marginBottom='1.1rem';
+  const ht=document.createElement('div');ht.style.cssText='font-size:.9rem;font-weight:700;color:#1a2744';ht.textContent=ex.title;
+  const hs=document.createElement('div');hs.style.cssText='font-size:.72rem;color:#6b7280;margin-top:2px';hs.textContent=ex.sub;
+  hd.appendChild(ht);hd.appendChild(hs);root.appendChild(hd);
+
+  // input row
+  const ir=document.createElement('div');ir.className='irow';
+  ir.appendChild(makeSBlock('Binärbild A',`${ex.A.length}×${ex.A[0].length}`,makeGrid(ex.A,'bin',xi)));
+  ir.appendChild(makeSBlock('Template B',ex.Bn,makeGrid(ex.B,'tpl',xi)));
+  root.appendChild(ir);
+
+  const hr=document.createElement('hr');hr.className='hdiv';root.appendChild(hr);
+
+  // steps — cells with listeners live here
+  const sr=document.createElement('div');sr.className='srow';
+  sr.appendChild(makeSBlock('① Init','Vordergrund→0  Rest→∞',makeGrid(init,'init',xi,null)));
+  sr.appendChild(makeArr('Ma','Phase 1'));
+  sr.appendChild(makeSBlock('② Phase 1','Vorwärts-Scan ↘',makeGrid(ph1,'ph1',xi,ph1D)));
+  sr.appendChild(makeArr('Mb','Phase 2'));
+  sr.appendChild(makeSBlock('③ Phase 2 — finale DT','Unten→Oben, Links→Rechts',makeGrid(ph2,'ph2',xi,ph2D)));
+  sr.appendChild(makeArr('Σ DT','Matching'));
+  sr.appendChild(makeSBlock('④ Chamfer Matching','Grün umrandet = bester Match',makeGrid(mRaw,'match',xi,null,minM)));
+  root.appendChild(sr);
+
+  // info panel
+  const ip=document.createElement('div');ip.className='info-panel';
+  const iph=document.createElement('div');iph.className='ip-head';
+  iph.innerHTML=`<span class="ip-dot on"></span><span class="ip-dot"></span><span class="ip-dot"></span>&nbsp;&nbsp;Live-Berechnung`;
+  const ipb=document.createElement('div');ipb.className='ip-body';ipb.id=`ip-${xi}`;
+  ipb.innerHTML='<span class="ip-ph">👆 Hover über eine Zelle — die Maskenkosten (+1 / +2) erscheinen direkt auf den Nachbar-Pixeln, Berechnung erscheint hier</span>';
+  ip.appendChild(iph);ip.appendChild(ipb);root.appendChild(ip);
+
+  // note + legend
+  const nd=document.createElement('div');nd.className='note';
+  nd.innerHTML=`<strong>💡</strong> ${ex.note}`;root.appendChild(nd);
+
+  const ld=document.createElement('div');ld.className='leg';
+  ld.innerHTML=`
+    <span>Distanz:</span>
+    <span class="li"><span class="lsw c0">0</span></span>
+    <span class="li"><span class="lsw c1">1</span></span>
+    <span class="li"><span class="lsw c2">2</span></span>
+    <span class="li"><span class="lsw c3">3</span></span>
+    <span class="li"><span class="lsw c4">4+</span></span>
+    <span class="li"><span class="lsw cinf" style="font-size:9px">∞</span></span>
+    <span class="li" style="margin-left:6px">
+      <span style="display:inline-block;width:14px;height:14px;border:3px solid #2563eb;border-radius:3px;background:#dbeafe"></span>&nbsp;Hovered
+    </span>
+    <span class="li"><span style="display:inline-block;width:14px;height:14px;border:2px solid #f59e0b;border-radius:3px;background:#fef3c7"></span>&nbsp;Quelle</span>
+    <span class="li"><span style="display:inline-block;width:14px;height:14px;border:2.5px solid #059669;border-radius:3px;background:#d1fae5"></span>&nbsp;Minimum</span>
+    <span class="li" style="margin-left:4px"><span class="lbadge" style="background:#fef3c7;color:#92400e;border:1px solid #f59e0b">+1</span>&nbsp;Mask-Kosten horiz/vert</span>
+    <span class="li"><span class="lbadge" style="background:#fee2e2;color:#991b1b;border:1px solid #f87171">+2</span>&nbsp;Mask-Kosten diagonal</span>
+  `;
+  root.appendChild(ld);
+  return root;
+}
+
+/* ── MASKS ── */
+function renderMask(id,rows){
+  const el=document.getElementById(id);
+  rows.forEach(row=>row.forEach(v=>{
+    const d=document.createElement('div');d.className='mc';
+    if(v==='0'){d.classList.add('mc-0');d.textContent='0';}
+    else if(v===null){d.classList.add('mc-d');d.textContent='·';}
+    else{d.classList.add('mc-n');d.textContent=v;}
+    el.appendChild(d);
+  }));
+}
+renderMask('ma',[[2,1,2],[1,null,null],[null,null,null]]);
+renderMask('mb',[[null,null,null],[1,'0',null],[2,1,2]]);
+
+/* ── TABS ── */
+function renderTabs(){
+  const bar=document.getElementById('tabbar');bar.innerHTML='';
+  EX.forEach((e,i)=>{
+    const b=document.createElement('button');
+    b.className='tbtn'+(i===curEX?' on':'');
+    b.textContent=e.nm;
+    b.onclick=()=>{curEX=i;cellMap.clear();clearAll();renderTabs();renderContent();};
+    bar.appendChild(b);
+  });
+}
+function renderContent(){
+  const c=document.getElementById('excontent');
+  while(c.firstChild)c.removeChild(c.firstChild);
+  c.appendChild(renderEx(EX[curEX],curEX));
+}
+renderTabs();
+renderContent();
+</script>
+</body>
+</html>
