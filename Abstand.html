@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lösung — Distanztransformation & Chamfer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#060d1a;color:#cbd5e1;font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;padding:16px;line-height:1.5}
+h1{font-size:18px;font-weight:800;color:#06b6d4;margin-bottom:3px}
+.sub{font-size:11px;color:#3a5575;margin-bottom:18px}
+
+/* SECTIONS */
+.sec{background:#0c1727;border:1px solid #18293f;border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.sec-title{font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.badge{padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700}
+
+/* TABS */
+.tabs{display:flex;gap:8px;margin-bottom:14px}
+.tab{padding:9px 22px;border-radius:7px;border:1px solid #18293f;background:#0c1727;color:#4a6080;cursor:pointer;font-size:13px;font-weight:500;transition:all .15s}
+.tab.active{border-color:#06b6d4;background:#06b6d422;color:#06b6d4;font-weight:700}
+
+/* GRIDS */
+.grid-outer{display:inline-block}
+.idx-row{display:flex;margin-left:26px;margin-bottom:2px}
+.cidx{width:38px;text-align:center;font-size:8px;color:#1e3555;font-family:monospace;font-weight:700}
+.cidx-sm{width:34px;text-align:center;font-size:8px;color:#1e3555;font-family:monospace;font-weight:700}
+.g-row{display:flex;align-items:center;margin-bottom:2px}
+.ridx{width:24px;text-align:right;font-size:8px;color:#1e3555;font-family:monospace;font-weight:700;margin-right:2px;flex-shrink:0}
+
+/* CELLS */
+.cell{width:36px;height:36px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:5px;margin:1px;position:relative;border:1.5px solid transparent;transition:border-color .1s,box-shadow .1s;cursor:default}
+.cell .coord{position:absolute;top:1px;left:2px;font-size:6px;opacity:.45;font-family:monospace}
+.cell .v{font-family:monospace;font-size:13px;font-weight:800}
+.cell .sv{font-family:monospace;font-size:9px;font-weight:700}
+.cell-fg{background:#22c55e;color:#000;border-color:#16a34a}
+.cell-bg{background:#0e1e30;color:#475569;border-color:#1a2d40}
+.cell-dt{cursor:crosshair}
+.cell-dt:hover{border-color:#f59e0b;box-shadow:0 0 0 2px #f59e0b44;z-index:2}
+.cell-ch:hover{border-color:#a855f7;box-shadow:0 0 0 2px #a855f744;z-index:2}
+.cell-min-hl{border-color:#f59e0b !important;box-shadow:0 0 0 3px #f59e0b66 !important}
+
+/* TEMPLATE CELLS */
+.tpl-cell{width:50px;height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:6px;margin:2px;border:2px solid #1a2d40;position:relative;font-family:monospace;font-weight:800;font-size:16px}
+.tpl-fg{background:#8b5cf6;color:#fff;border-color:#7c3aed}
+.tpl-bg{background:#0e1e30;color:#253545}
+.tpl-center{border-color:#f59e0b !important;box-shadow:0 0 0 2px #f59e0b44}
+.tpl-label{position:absolute;bottom:2px;font-size:7px;font-weight:700;opacity:.7;font-family:monospace}
+
+/* FORMULA */
+.fbox{background:#040c18;border:1px solid #18293f;border-radius:7px;padding:10px 14px;font-family:monospace;font-size:12px;color:#7dd3fc;margin:8px 0;line-height:1.9}
+.fbox .g{color:#22c55e}.fbox .o{color:#f59e0b}.fbox .p{color:#f472b6}.fbox .v{color:#a5f3fc}
+
+/* HOVER INFO PANEL */
+.info-panel{background:#040c18;border:1px solid #1e3555;border-radius:10px;padding:14px 16px;min-height:90px;margin-top:10px;font-size:12px}
+.info-placeholder{color:#1e3555;text-align:center;padding:24px;font-size:12px}
+.calc-row{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:6px;margin-bottom:3px;border:1px solid #1a2d40;background:#080f1e}
+.calc-row.winner{background:#0d0900;border-color:#f59e0b55}
+.calc-row.chamfer-row{background:#080a18;border-color:#a855f744}
+.calc-row.chamfer-win{background:#12000f;border-color:#f59e0b55}
+.cl{color:#4a6080;font-family:monospace;font-size:10px;flex-shrink:0;width:120px}
+.cm{font-family:monospace;font-size:11px;color:#cbd5e1;flex:1}
+.cbadge{padding:1px 7px;border-radius:4px;font-size:9px;font-weight:800;flex-shrink:0}
+.result-box{margin-top:10px;padding:10px 14px;border-radius:8px;display:flex;align-items:center;gap:12px}
+
+/* OFFSET EXPLANATION */
+.offset-sec{background:#08111e;border:1px solid #1e3a2a;border-radius:9px;padding:13px 15px;margin-bottom:14px}
+.offset-title{font-size:12px;font-weight:700;color:#22c55e;margin-bottom:10px;letter-spacing:.03em}
+.offset-table{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.offset-card{background:#040c18;border:1px solid #18293f;border-radius:7px;padding:10px 12px;min-width:200px}
+.offset-line{font-family:monospace;font-size:11px;color:#94a3b8;padding:3px 0;border-bottom:1px solid #0f1f30}
+.offset-line:last-child{border:none}
+.offset-line .hl{color:#f59e0b;font-weight:700}
+.offset-line .gr{color:#22c55e;font-weight:700}
+.offset-line .vio{color:#a78bfa;font-weight:700}
+
+/* LAYOUT */
+.two{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.three{display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.legend{display:flex;flex-direction:column;gap:3px;min-width:120px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:10px;font-family:monospace;color:#94a3b8}
+.leg-sw{width:28px;height:18px;border-radius:3px;flex-shrink:0}
+.explain{font-size:12px;color:#94a3b8;line-height:1.8;max-width:350px}
+.explain b{color:#e2e8f0}
+.big-arrow{font-size:28px;color:#f59e0b;display:flex;align-items:center;padding-top:18px}
+</style>
+</head>
+<body>
+
+<h1>📐 Lösung: Distanztransformation & Chamfer-Abstand</h1>
+<div class="sub">Bildverarbeitung Kap. 7 · Fahre mit der Maus über ein Ergebnis-Pixel um die Berechnung zu sehen</div>
+
+<!-- WHY FG-OFFSETS? -->
+<div class="offset-sec" id="offset-sec">
+  <div class="offset-title">❓ Warum FG-Offsets: (-1,-1), (-1,+1), (0,0) ? — Erklärung</div>
+  <div class="two">
+    <div id="offset-tpl-viz"></div>
+    <div class="wide" style="flex:1;min-width:240px">
+      <div class="offset-card" style="margin-bottom:8px">
+        <div style="font-size:11px;font-weight:700;color:#e2e8f0;margin-bottom:7px">Schritt-für-Schritt Herleitung:</div>
+        <div class="offset-line">Das Template ist <span class="vio">3×3</span> → Referenzpunkt = <span class="hl">Mitte = (Zeile 1, Spalte 1)</span></div>
+        <div class="offset-line">Offset-Formel: <span class="gr">(k − 1, l − 1)</span> für Template-Pixel an Position (k,l)</div>
+        <div class="offset-line">Template(0,0)=<span class="vio">1</span>: Offset = (0−1, 0−1) = <span class="hl">(-1,-1)</span></div>
+        <div class="offset-line">Template(0,2)=<span class="vio">1</span>: Offset = (0−1, 2−1) = <span class="hl">(-1,+1)</span></div>
+        <div class="offset-line">Template(1,1)=<span class="vio">1</span>: Offset = (1−1, 1−1) = <span class="hl">( 0, 0)</span> ← Referenzpunkt selbst</div>
+      </div>
+      <div class="offset-card">
+        <div style="font-size:11px;font-weight:700;color:#e2e8f0;margin-bottom:7px">Was bedeutet das bei der Chamfer-Rechnung?</div>
+        <div class="fbox" style="margin:0;font-size:11px">
+          Q(<span class="o">r</span>,<span class="o">s</span>) = (1/K) · Σ D[<span class="o">r</span><span class="hl">+i</span>, <span class="o">s</span><span class="hl">+j</span>]
+        </div>
+        <div style="font-size:11px;color:#94a3b8;margin-top:8px;line-height:1.7">
+          Wenn Template bei (<span style="color:#f59e0b">r,s</span>) liegt:<br>
+          Offset (-1,-1) → wir lesen <b style="color:#a5f3fc">D[r-1][s-1]</b><br>
+          Offset (-1,+1) → wir lesen <b style="color:#a5f3fc">D[r-1][s+1]</b><br>
+          Offset ( 0, 0) → wir lesen <b style="color:#a5f3fc">D[r][s]</b><br>
+          Summe ÷ K = Chamfer-Abstand Q(r,s)
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXERCISE TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchEx(0)">Aufgabe 1</button>
+  <button class="tab" onclick="switchEx(1)">Aufgabe 2</button>
+</div>
+
+<!-- DYNAMIC CONTENT -->
+<div id="ex-content"></div>
+
+<script>
+// ═══ DATA ═══════════════════════════════════════════════════════════
+const EX = [
+  {
+    name:'Aufgabe 1',
+    img:[
+      [0,1,0,0,0,0,0,0,0,0],
+      [0,0,0,1,0,1,0,0,0,0],
+      [0,0,0,0,1,0,0,0,0,0],
+      [0,1,1,0,0,0,1,0,0,0],
+      [0,0,0,0,0,0,1,0,0,0],
+      [0,1,1,0,0,1,1,0,0,0],
+      [0,0,1,0,0,0,0,0,1,0],
+      [1,0,0,0,0,0,0,0,0,0],
+    ],
+    tpl:[[1,0,1],[0,1,0],[0,0,0]],
+  },
+  {
+    name:'Aufgabe 2',
+    img:[
+      [0,1,1,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,1,0,0,0,0,0,0],
+      [0,0,0,1,0,0,0,0,0,0],
+      [0,0,0,1,1,0,1,0,0,0],
+      [0,0,0,0,0,0,1,1,0,0],
+      [0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0],
+    ],
+    tpl:[[0,1,0],[0,1,0],[0,1,1]],
+  },
+];
+
+// ═══ ALGORITHMS ════════════════════════════════════════════════════
+function manhattanDT(img){
+  const R=img.length,C=img[0].length;
+  const D=img.map(r=>r.map(v=>v?0:9999));
+  const q=[];
+  for(let i=0;i<R;i++) for(let j=0;j<C;j++) if(img[i][j]) q.push([i,j]);
+  let h=0;
+  while(h<q.length){
+    const[ci,cj]=q[h++];
+    for(const[di,dj]of[[-1,0],[1,0],[0,-1],[0,1]]){
+      const ni=ci+di,nj=cj+dj;
+      if(ni>=0&&ni<R&&nj>=0&&nj<C&&D[ni][nj]>D[ci][cj]+1){
+        D[ni][nj]=D[ci][cj]+1;q.push([ni,nj]);
+      }
+    }
+  }
+  return D.map(r=>r.map(v=>v>=9999?null:v));
+}
+
+function getOffsets(tpl){
+  const cr=Math.floor(tpl.length/2),cc=Math.floor(tpl[0].length/2);
+  const off=[];
+  for(let k=0;k<tpl.length;k++) for(let l=0;l<tpl[0].length;l++) if(tpl[k][l]) off.push([k-cr,l-cc,k,l]);
+  return off; // [di, dj, tpl_row, tpl_col]
+}
+
+function chamferDist(D,offsets){
+  const R=D.length,C=D[0].length,K=offsets.length;
+  return D.map((_,r)=>D[r].map((__,s)=>{
+    let sum=0;
+    for(const[di,dj]of offsets){
+      const ni=r+di,nj=s+dj;
+      if(ni<0||ni>=R||nj<0||nj>=C||D[ni][nj]===null) return null;
+      sum+=D[ni][nj];
+    }
+    return Math.round(sum/K*100)/100;
+  }));
+}
+
+function getFG(img){
+  const fg=[];
+  for(let i=0;i<img.length;i++) for(let j=0;j<img[0].length;j++) if(img[i][j]) fg.push([i,j]);
+  return fg;
+}
+
+function gridMax(g){
+  let m=0;
+  for(const r of g) for(const v of r) if(v!=null&&v>m) m=v;
+  return m||1;
+}
+
+// ═══ COLORS ════════════════════════════════════════════════════════
+function heat(v,mx){
+  if(v===0) return{bg:'#22c55e',fg:'#000'};
+  if(v==null) return{bg:'#0c1826',fg:'#1e3555'};
+  const t=Math.min(v/mx,1);
+  let r=0,g=0,b=0;
+  if(t<0.33){const s=t/0.33;g=Math.round(s*220);b=255;}
+  else if(t<0.66){const s=(t-0.33)/0.33;r=Math.round(s*255);g=220;b=Math.round(255*(1-s));}
+  else{const s=(t-0.66)/0.34;r=255;g=Math.round(220*(1-s));b=0;}
+  const L=0.299*r+0.587*g+0.114*b;
+  return{bg:`rgb(${r},${g},${b})`,fg:L>140?'#000':'#fff'};
+}
+
+function heatChamfer(v,mx){
+  if(v==null) return{bg:'#0c1826',fg:'#1e3555'};
+  const t=Math.min(v/mx,1);
+  const h=Math.round(280-t*240); // violet→blue
+  return{bg:`hsl(${h},70%,35%)`,fg:'#fff'};
+}
+
+// ═══ GRID BUILDERS ═════════════════════════════════════════════════
+function makeIndexRow(n, w, prefix='j'){
+  const div=document.createElement('div');
+  div.className='idx-row';
+  for(let j=0;j<n;j++){
+    const s=document.createElement('span');
+    s.style.cssText=`width:${w+2}px;text-align:center;font-size:8px;color:#1e3555;font-family:monospace;font-weight:700;display:inline-block`;
+    s.textContent=`${prefix}=${j}`;
+    div.appendChild(s);
+  }
+  return div;
+}
+
+function buildBinaryGrid(img){
+  const wrap=document.createElement('div');
+  wrap.className='grid-outer';
+  wrap.appendChild(makeIndexRow(img[0].length,36));
+  img.forEach((row,i)=>{
+    const gr=document.createElement('div');gr.className='g-row';
+    const rl=document.createElement('div');rl.className='ridx';rl.textContent=`i=${i}`;gr.appendChild(rl);
+    row.forEach((v,j)=>{
+      const c=document.createElement('div');
+      c.className='cell '+(v?'cell-fg':'cell-bg');
+      const coord=document.createElement('div');coord.className='coord';coord.textContent=`${i},${j}`;c.appendChild(coord);
+      const val=document.createElement('div');val.className='v';val.textContent=v;c.appendChild(val);
+      gr.appendChild(c);
+    });
+    wrap.appendChild(gr);
+  });
+  return wrap;
+}
+
+function buildDTGrid(img,DT,FG,infoEl){
+  const mx=gridMax(DT);
+  const wrap=document.createElement('div');
+  wrap.className='grid-outer';
+  wrap.appendChild(makeIndexRow(DT[0].length,36));
+  DT.forEach((row,i)=>{
+    const gr=document.createElement('div');gr.className='g-row';
+    const rl=document.createElement('div');rl.className='ridx';rl.textContent=`i=${i}`;gr.appendChild(rl);
+    row.forEach((v,j)=>{
+      const{bg,fg}=heat(v,mx);
+      const c=document.createElement('div');
+      c.className='cell cell-dt';
+      c.style.background=bg;c.style.color=fg;
+      const coord=document.createElement('div');coord.className='coord';coord.textContent=`${i},${j}`;c.appendChild(coord);
+      const val=document.createElement('div');val.className='v';val.textContent=v==null?'∞':v;c.appendChild(val);
+      c.addEventListener('click',()=>{
+        if(selectedDTCell) selectedDTCell.style.outline='';
+        selectedDTCell=c;
+        c.style.outline='3px solid #f59e0b';
+        showDTHover(i,j,img,DT,FG,infoEl,mx);
+      });
+      gr.appendChild(c);
+    });
+    wrap.appendChild(gr);
+  });
+  return wrap;
+}
+
+function buildChamferGrid(CH,DT,offsets,K,infoEl,dtMx){
+  const vals=CH.flat().filter(v=>v!=null);
+  const mx=Math.max(...vals)||1;
+  const minV=Math.min(...vals);
+  const wrap=document.createElement('div');
+  wrap.className='grid-outer';
+  wrap.appendChild(makeIndexRow(CH[0].length,36));
+  CH.forEach((row,i)=>{
+    const gr=document.createElement('div');gr.className='g-row';
+    const rl=document.createElement('div');rl.className='ridx';rl.textContent=`r=${i}`;gr.appendChild(rl);
+    row.forEach((v,j)=>{
+      const isMin=v!==null&&v===minV;
+      const{bg,fg}=heatChamfer(v,mx);
+      const c=document.createElement('div');
+      c.className='cell cell-ch';
+      c.style.background=bg;c.style.color=fg;
+      if(isMin){c.style.borderColor='#f59e0b';c.style.boxShadow='0 0 0 3px #f59e0b55';}
+      const coord=document.createElement('div');coord.className='coord';coord.textContent=`${i},${j}`;c.appendChild(coord);
+      const val=document.createElement('div');val.className='sv';val.textContent=v==null?'—':v;c.appendChild(val);
+      if(isMin){const star=document.createElement('div');star.style.cssText='font-size:8px;color:#f59e0b;font-weight:800';star.textContent='★';c.appendChild(star);}
+      c.addEventListener('click',()=>{
+        if(selectedChamferCell) selectedChamferCell.style.outline='';
+        selectedChamferCell=c;
+        c.style.outline='3px solid #f59e0b';
+        showChamferHover(i,j,CH,DT,offsets,K,infoEl,dtMx,minV);
+      });
+      gr.appendChild(c);
+    });
+    wrap.appendChild(gr);
+  });
+  return wrap;
+}
+
+// ═══ HOVER PANELS ═════════════════════════════════════════════════
+function clearHover(el){
+  el.innerHTML='<div class="info-placeholder">↑ Fahre mit der Maus über ein Pixel</div>';
+}
+
+function showDTHover(i,j,img,DT,FG,el,mx){
+  const isFG=img[i][j]===1;
+  const dv=DT[i][j];
+  const{bg,fg}=heat(dv,mx);
+  let html=`<div style="font-size:13px;font-weight:700;color:#06b6d4;margin-bottom:10px">
+    D(${i},${j}) = ${dv==null?'∞':dv}
+    <span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:5px;background:${bg};color:${fg};font-family:monospace;font-size:14px;font-weight:800;margin-left:8px">${dv==null?'∞':dv}</span>
+    &nbsp;<span style="font-size:11px;color:#4a6080">[Pixel (Zeile ${i}, Spalte ${j}), Bildwert = ${img[i][j]}]</span>
+  </div>`;
+
+  if(isFG){
+    html+=`<div style="background:#0a2010;border:1px solid #22c55e44;border-radius:7px;padding:10px 14px;font-size:12px;color:#86efac">
+      ✅ Dieser Pixel hat Wert <b>1</b> → er ist selbst ein Vordergrundpixel.<br>
+      Sein Abstand zu sich selbst = 0. Deshalb automatisch <b>D = 0</b>.
+    </div>`;
+  } else {
+    html+=`<div style="font-size:11px;color:#4a6080;margin-bottom:8px">
+      Berechne <b style="color:#e2e8f0">Abstand zu allen ${FG.length} Vordergrundpixeln</b>, nimm das Minimum:
+    </div>`;
+    const calcs=FG.map(([fi,fj])=>({fi,fj,di:Math.abs(i-fi),dj:Math.abs(j-fj),d:Math.abs(i-fi)+Math.abs(j-fj)}));
+    const minD=Math.min(...calcs.map(c=>c.d));
+    calcs.forEach(({fi,fj,di,dj,d})=>{
+      const win=d===minD;
+      html+=`<div class="calc-row ${win?'winner':''}">
+        <span class="cl">FG-Pixel (${fi},${fj}):</span>
+        <span class="cm">|${i}−${fi}| + |${j}−${fj}| = <span style="color:#22c55e">${di}</span> + <span style="color:#f472b6">${dj}</span> = <b style="color:${win?'#f59e0b':'#94a3b8'}">${d}</b></span>
+        ${win?`<span class="cbadge" style="background:#f59e0b;color:#000">MIN ✓</span>`:''}
+      </div>`;
+    });
+    html+=`<div style="margin-top:8px;padding:8px 12px;background:${bg};border-radius:7px;font-family:monospace;font-size:14px;font-weight:800;color:${fg};display:inline-block">D(${i},${j}) = ${dv}</div>`;
+  }
+  el.innerHTML=html;
+}
+
+function showChamferHover(r,s,CH,DT,offsets,K,el,dtMx,minV){
+  const cv=CH[r][s];
+  const{bg:cbg,fg:cfg}=heatChamfer(cv,Math.max(...CH.flat().filter(v=>v!=null))||1);
+  const isMin=cv!==null&&cv===minV;
+
+  let html=`<div style="font-size:13px;font-weight:700;color:#a78bfa;margin-bottom:10px">
+    Q(${r},${s}) = ${cv==null?'—':cv}
+    ${cv!=null?`<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:5px;background:${cbg};color:${cfg};font-family:monospace;font-size:14px;font-weight:800;margin-left:8px">${cv}</span>`:''}
+    ${isMin?'<span style="background:#f59e0b;color:#000;padding:1px 8px;border-radius:4px;font-size:10px;font-weight:800;margin-left:8px">★ BEST MATCH</span>':''}
+    <span style="font-size:11px;color:#4a6080;margin-left:6px">[Template-Referenzpunkt bei (${r},${s})]</span>
+  </div>`;
+
+  if(cv===null){
+    html+=`<div style="background:#1a0a0a;border:1px solid #44222244;border-radius:7px;padding:10px 14px;font-size:12px;color:#f87171">
+      ⚠ Ungültig — das Template ragt über den Bildrand.<br>
+      Ein oder mehrere DT-Werte liegen außerhalb des Bildes.
+    </div>`;
+  } else {
+    html+=`<div style="font-size:11px;color:#4a6080;margin-bottom:8px">
+      <b style="color:#e2e8f0">Schritt 1</b> — DT-Werte an den Template-FG-Positionen nachschlagen:<br>
+      Formel: Q(r,s) = (1/K) · Σ D[r+i, s+j]
+    </div>`;
+    const parts=offsets.map(([di,dj,,])=>({di,dj,ni:r+di,nj:s+dj,dtv:DT[r+di][s+dj]}));
+    const sum=parts.reduce((a,p)=>a+p.dtv,0);
+    parts.forEach(({di,dj,ni,nj,dtv})=>{
+      const osign=(di>=0?'+':'')+di+','+(dj>=0?'+':'')+dj;
+      html+=`<div class="calc-row chamfer-row">
+        <span class="cl">Offset (${osign}) →</span>
+        <span class="cm">D[${r}${di>=0?'+':''}${di}][${s}${dj>=0?'+':''}${dj}] = D[${ni}][${nj}] = <b style="color:#a5f3fc">${dtv}</b></span>
+      </div>`;
+    });
+    html+=`<div style="margin-top:8px;font-size:11px;color:#4a6080;margin-bottom:6px">
+      <b style="color:#e2e8f0">Schritt 2</b> — Summe ÷ K (K=${K} FG-Pixel im Template):
+    </div>`;
+    html+=`<div style="font-family:monospace;font-size:12px;background:#040c18;border:1px solid #18293f;border-radius:6px;padding:8px 12px;color:#7dd3fc">
+      Q(${r},${s}) = (${parts.map(p=>p.dtv).join(' + ')}) / ${K} = ${sum} / ${K} = <b style="color:#f59e0b">${cv}</b>
+    </div>`;
+  }
+  el.innerHTML=html;
+}
+
+// ═══ TEMPLATE OFFSET VIZ ══════════════════════════════════════════
+function buildOffsetViz(tpl, name){
+  const cr=Math.floor(tpl.length/2),cc=Math.floor(tpl[0].length/2);
+  const offsets=getOffsets(tpl);
+  const wrap=document.createElement('div');
+  wrap.style.cssText='text-align:left';
+
+  const title=document.createElement('div');
+  title.style.cssText='font-size:10px;color:#4a6080;font-weight:700;margin-bottom:6px';
+  title.textContent=`Template (${name}):`;
+  wrap.appendChild(title);
+
+  const gridWrap=document.createElement('div');
+  gridWrap.style.display='inline-block';
+
+  const idxRow=document.createElement('div');
+  idxRow.style.cssText='display:flex;margin-left:16px;margin-bottom:2px';
+  for(let l=0;l<tpl[0].length;l++){
+    const s=document.createElement('span');
+    s.style.cssText='width:54px;text-align:center;font-size:8px;color:#1e3555;font-family:monospace';
+    s.textContent=`l=${l}`;
+    idxRow.appendChild(s);
+  }
+  gridWrap.appendChild(idxRow);
+
+  tpl.forEach((row,k)=>{
+    const gr=document.createElement('div');
+    gr.style.cssText='display:flex;align-items:center;margin-bottom:3px';
+    const rl=document.createElement('div');
+    rl.style.cssText='width:14px;font-size:8px;color:#1e3555;font-family:monospace;text-align:right;margin-right:2px';
+    rl.textContent=`k=${k}`;
+    gr.appendChild(rl);
+    row.forEach((v,l)=>{
+      const c=document.createElement('div');
+      c.className='tpl-cell '+(v?'tpl-fg':'tpl-bg')+(k===cr&&l===cc?' tpl-center':'');
+      c.textContent=v;
+      const lbl=document.createElement('div');
+      lbl.className='tpl-label';
+      if(k===cr&&l===cc) lbl.innerHTML='★ Ref';
+      else if(v){
+        const di=k-cr,dj=l-cc;
+        lbl.innerHTML=`(${di>=0?'+':''}${di},${dj>=0?'+':''}${dj})`;
+        lbl.style.color='#f59e0b';
+      }
+      c.appendChild(lbl);
+      gr.appendChild(c);
+    });
+    gridWrap.appendChild(gr);
+  });
+  wrap.appendChild(gridWrap);
+
+  const offList=document.createElement('div');
+  offList.style.cssText='margin-top:8px;font-size:10px;font-family:monospace;color:#4a6080';
+  offList.innerHTML=`<span style="color:#e2e8f0;font-weight:700">FG-Offsets:</span> `+
+    offsets.map(([di,dj])=>`<span style="color:#f59e0b;font-weight:700">(${di>=0?'+':''}${di},${dj>=0?'+':''}${dj})</span>`).join(', ');
+  wrap.appendChild(offList);
+
+  return wrap;
+}
+
+// ═══ RENDER EXERCISE ═══════════════════════════════════════════════
+let currentEx=0;
+let selectedChamferCell=null;
+let selectedDTCell=null;
+
+function renderOffsetSec(ex){
+  const tpl=EX[ex].tpl;
+  const cont=document.getElementById('offset-tpl-viz');
+  cont.innerHTML='';
+  cont.appendChild(buildOffsetViz(tpl, EX[ex].name));
+}
+
+function switchEx(idx){
+  currentEx=idx;
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',i===idx));
+  renderOffsetSec(idx);
+  renderExercise(idx);
+}
+
+function renderExercise(idx){
+  const{img,tpl}=EX[idx];
+  const FG=getFG(img);
+  const DT=manhattanDT(img);
+  const dtMx=gridMax(DT);
+  const offsets=getOffsets(tpl);
+  const K=offsets.length;
+  const CH=chamferDist(DT,offsets);
+  const chVals=CH.flat().filter(v=>v!=null);
+  const minCH=Math.min(...chVals);
+
+  const cont=document.getElementById('ex-content');
+  cont.innerHTML='';
+
+  // ── BINARY IMAGE ──
+  const imgSec=document.createElement('div');
+  imgSec.className='sec';
+  const imgTitle=document.createElement('div');
+  imgTitle.className='sec-title';
+  imgTitle.innerHTML=`<span class="badge" style="background:#22c55e22;color:#22c55e;border:1px solid #22c55e44">Binärbild</span> ${EX[idx].name} — ${img.length}×${img[0].length} Pixel, ${FG.length} FG-Pixel`;
+  imgSec.appendChild(imgTitle);
+  const imgWrap=document.createElement('div');
+  imgWrap.className='two';
+  const imgGrid=buildBinaryGrid(img);
+  imgWrap.appendChild(imgGrid);
+  const imgExpl=document.createElement('div');
+  imgExpl.className='explain';
+  imgExpl.innerHTML=`FG-Pixel (Wert=1): ${FG.map(([fi,fj])=>`<span style="color:#22c55e;font-family:monospace;font-weight:700">(${fi},${fj})</span>`).join(', ')}`;
+  imgWrap.appendChild(imgExpl);
+  imgSec.appendChild(imgWrap);
+  cont.appendChild(imgSec);
+
+  // ── a) MANHATTAN DT ──
+  const dtSec=document.createElement('div');
+  dtSec.className='sec';
+  dtSec.innerHTML=`<div class="sec-title"><span class="badge" style="background:#06b6d422;color:#06b6d4;border:1px solid #06b6d444">a)</span> Manhattan-Distanztransformation D(i,j)</div>
+    <div class="fbox">D(<span class="o">i</span>,<span class="o">j</span>) = min<sub style="font-size:9px">p'∈FG(A)</sub> ( |<span class="o">i</span>−<span class="g">i'</span>| + |<span class="o">j</span>−<span class="g">j'</span>| )</div>`;
+  const dtTwo=document.createElement('div');dtTwo.className='three';
+
+  const dtInfoEl=document.createElement('div');dtInfoEl.className='info-panel';clearHover(dtInfoEl);
+  const dtGridWrap=document.createElement('div');
+  dtGridWrap.appendChild(buildDTGrid(img,DT,FG,dtInfoEl));
+
+  // Legend DT
+  const dtLeg=document.createElement('div');
+  dtLeg.innerHTML=`<div style="font-size:9px;color:#3a5575;font-weight:700;margin-bottom:6px">LEGENDE:</div>`;
+  const legDiv=document.createElement('div');legDiv.className='legend';
+  const mx=gridMax(DT);
+  for(let d=0;d<=mx;d++){
+    const{bg,fg}=heat(d,mx);
+    const item=document.createElement('div');item.className='leg-item';
+    const sw=document.createElement('div');sw.className='leg-sw';sw.style.background=bg;
+    const lbl=document.createElement('span');lbl.textContent=`D=${d}${d===0?' (FG)':''}`;
+    item.appendChild(sw);item.appendChild(lbl);legDiv.appendChild(item);
+    if(d>=7&&d<mx-1){
+      const skip=document.createElement('div');skip.style.cssText='font-size:10px;color:#2a4060;padding:2px 0;font-family:monospace';skip.textContent='...';
+      legDiv.appendChild(skip);break;
+    }
+  }
+  const lastItem=document.createElement('div');lastItem.className='leg-item';
+  const lastSw=document.createElement('div');lastSw.className='leg-sw';const{bg:lbg,fg:lfg}=heat(mx,mx);lastSw.style.background=lbg;
+  const lastLbl=document.createElement('span');lastLbl.textContent=`D=${mx} (max)`;
+  lastItem.appendChild(lastSw);lastItem.appendChild(lastLbl);legDiv.appendChild(lastItem);
+  dtLeg.appendChild(legDiv);
+
+  dtTwo.appendChild(dtGridWrap);
+  dtTwo.appendChild(dtLeg);
+  dtSec.appendChild(dtTwo);
+  dtSec.appendChild(dtInfoEl);
+  cont.appendChild(dtSec);
+
+  // ── b) CHAMFER ──
+  const chSec=document.createElement('div');
+  chSec.className='sec';
+  const fgOffStr=offsets.map(([di,dj])=>`(${di>=0?'+':''}${di},${dj>=0?'+':''}${dj})`).join(', ');
+  chSec.innerHTML=`<div class="sec-title"><span class="badge" style="background:#a855f722;color:#a78bfa;border:1px solid #a855f744">b)</span> Chamfer-Abstand Q(r,s)</div>
+    <div class="fbox">Q(<span class="o">r</span>,<span class="o">s</span>) = (1/K) · Σ<sub style="font-size:9px">(i,j)∈FG(R)</sub> D[<span class="o">r</span>+i, <span class="o">s</span>+j]
+      <br><span style="color:#1e3555">K=${K} · FG-Offsets: ${fgOffStr}</span></div>`;
+  const chTwo=document.createElement('div');chTwo.className='three';
+
+  const chInfoEl=document.createElement('div');chInfoEl.className='info-panel';clearHover(chInfoEl);
+  const chGridWrap=document.createElement('div');
+  chGridWrap.appendChild(buildChamferGrid(CH,DT,offsets,K,chInfoEl,dtMx));
+
+  const chExpl=document.createElement('div');
+  chExpl.className='explain';
+  chExpl.innerHTML=`<b>Minimum:</b> Q = <b style="color:#f59e0b">${minCH}</b><br>
+    <b>Best Match</b> (★ golden) bei: ${[...Array(CH.length)].flatMap((_,r)=>[...Array(CH[0].length)].filter((_,s)=>CH[r][s]===minCH).map((_,si)=>{
+      const s=si; return null;
+    })).filter(Boolean).join(', ')}`;
+
+  // Find min positions
+  const minPositions=[];
+  for(let r=0;r<CH.length;r++) for(let s=0;s<CH[0].length;s++) if(CH[r][s]===minCH) minPositions.push(`(${r},${s})`);
+  chExpl.innerHTML=`<b>Ergebnis:</b> Minimum Q = <b style="color:#f59e0b">${minCH}</b><br>
+    <b style="color:#f59e0b">★ Best Match</b> bei: ${minPositions.join(', ')}<br><br>
+    <span style="color:#475569">→ Das Template "passt" am besten an dieser Position ins Bild.</span>`;
+
+  chTwo.appendChild(chGridWrap);
+  chTwo.appendChild(chExpl);
+  chSec.appendChild(chTwo);
+  chSec.appendChild(chInfoEl);
+  cont.appendChild(chSec);
+}
+
+// ═══ INIT ══════════════════════════════════════════════════════════
+renderOffsetSec(0);
+renderExercise(0);
+</script>
+</body>
+</html>
